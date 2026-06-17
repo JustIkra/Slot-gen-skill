@@ -1,0 +1,9 @@
+{
+  "name": "slot-gen-skill-tools",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "generate": "bun run generate-image.ts"
+  }
+}

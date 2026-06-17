@@ -1,0 +1,286 @@
+
+characters_nick.png
+size: 1937,968
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+belt
+  rotate: true
+  xy: 1796, 666
+  size: 301, 73
+  orig: 301, 73
+  offset: 0, 0
+  index: -1
+belt1
+  rotate: false
+  xy: 312, 6
+  size: 67, 48
+  orig: 70, 48
+  offset: 0, 0
+  index: -1
+belt4
+  rotate: true
+  xy: 1444, 86
+  size: 300, 69
+  orig: 301, 70
+  offset: 1, 1
+  index: -1
+brows1
+  rotate: false
+  xy: 381, 20
+  size: 80, 34
+  orig: 80, 34
+  offset: 0, 0
+  index: -1
+brows2
+  rotate: true
+  xy: 712, 67
+  size: 41, 23
+  orig: 41, 23
+  offset: 0, 0
+  index: -1
+cadr
+  rotate: true
+  xy: 1871, 887
+  size: 80, 65
+  orig: 80, 65
+  offset: 0, 0
+  index: -1
+cadr2
+  rotate: false
+  xy: 1086, 87
+  size: 17, 19
+  orig: 17, 19
+  offset: 0, 0
+  index: -1
+cadr_01
+  rotate: false
+  xy: 1320, 5
+  size: 76, 60
+  orig: 80, 65
+  offset: 3, 3
+  index: -1
+ear
+  rotate: true
+  xy: 1864, 441
+  size: 45, 72
+  orig: 46, 72
+  offset: 0, 0
+  index: -1
+eyes1
+  rotate: true
+  xy: 1398, 13
+  size: 52, 37
+  orig: 52, 37
+  offset: 0, 0
+  index: -1
+eyes2
+  rotate: true
+  xy: 1904, 403
+  size: 36, 32
+  orig: 36, 32
+  offset: 0, 0
+  index: -1
+glasses
+  rotate: true
+  xy: 1843, 59
+  size: 73, 30
+  orig: 73, 30
+  offset: 0, 0
+  index: -1
+glasses_01
+  rotate: true
+  xy: 1086, 69
+  size: 16, 17
+  orig: 16, 17
+  offset: 0, 0
+  index: -1
+hair1
+  rotate: true
+  xy: 740, 1
+  size: 121, 201
+  orig: 121, 201
+  offset: 0, 0
+  index: -1
+hair2
+  rotate: false
+  xy: 1871, 754
+  size: 54, 131
+  orig: 54, 131
+  offset: 0, 0
+  index: -1
+hair3
+  rotate: true
+  xy: 1864, 488
+  size: 176, 70
+  orig: 176, 70
+  offset: 0, 0
+  index: -1
+hand_right
+  rotate: false
+  xy: 1671, 123
+  size: 117, 174
+  orig: 126, 174
+  offset: 9, 0
+  index: -1
+handleft
+  rotate: false
+  xy: 943, 16
+  size: 141, 90
+  orig: 141, 90
+  offset: 0, 0
+  index: -1
+head
+  rotate: true
+  xy: 254, 56
+  size: 177, 236
+  orig: 177, 238
+  offset: 0, 0
+  index: -1
+legs
+  rotate: false
+  xy: 1105, 67
+  size: 337, 319
+  orig: 341, 319
+  offset: 4, 0
+  index: -1
+legs2
+  rotate: true
+  xy: 1515, 17
+  size: 95, 217
+  orig: 95, 217
+  offset: 0, 0
+  index: -1
+legs3
+  rotate: true
+  xy: 740, 124
+  size: 109, 215
+  orig: 109, 215
+  offset: 0, 0
+  index: -1
+mustache
+  rotate: true
+  xy: 1796, 266
+  size: 141, 67
+  orig: 149, 67
+  offset: 0, 0
+  index: -1
+noise
+  rotate: false
+  xy: 1871, 676
+  size: 58, 76
+  orig: 58, 76
+  offset: 0, 0
+  index: -1
+notebook
+  rotate: false
+  xy: 1515, 114
+  size: 154, 183
+  orig: 154, 183
+  offset: 0, 0
+  index: -1
+robe01
+  rotate: true
+  xy: 1, 2
+  size: 58, 213
+  orig: 58, 213
+  offset: 0, 0
+  index: -1
+robe1
+  rotate: false
+  xy: 1790, 134
+  size: 112, 130
+  orig: 112, 130
+  offset: 0, 0
+  index: -1
+robe2
+  rotate: false
+  xy: 1, 62
+  size: 251, 171
+  orig: 251, 171
+  offset: 0, 0
+  index: -1
+robe3
+  rotate: true
+  xy: 957, 108
+  size: 125, 141
+  orig: 125, 141
+  offset: 0, 0
+  index: -1
+robe4
+  rotate: true
+  xy: 492, 110
+  size: 123, 246
+  orig: 143, 246
+  offset: 0, 0
+  index: -1
+robe5
+  rotate: true
+  xy: 492, 1
+  size: 107, 218
+  orig: 136, 297
+  offset: 29, 0
+  index: -1
+robe7
+  rotate: true
+  xy: 216, 1
+  size: 53, 94
+  orig: 53, 94
+  offset: 0, 0
+  index: -1
+robe8
+  rotate: false
+  xy: 1238, 2
+  size: 80, 63
+  orig: 80, 63
+  offset: 0, 0
+  index: -1
+robe9
+  rotate: false
+  xy: 1810, 55
+  size: 31, 77
+  orig: 31, 78
+  offset: 0, 0
+  index: -1
+shadow
+  rotate: true
+  xy: 1527, 299
+  size: 668, 267
+  orig: 697, 267
+  offset: 0, 0
+  index: -1
+shirt
+  rotate: false
+  xy: 1105, 388
+  size: 420, 579
+  orig: 420, 579
+  offset: 0, 0
+  index: -1
+shoes1
+  rotate: false
+  xy: 1086, 1
+  size: 150, 64
+  orig: 150, 64
+  offset: 0, 0
+  index: -1
+shoes2
+  rotate: false
+  xy: 1734, 41
+  size: 74, 80
+  orig: 74, 80
+  offset: 0, 0
+  index: -1
+tie
+  rotate: false
+  xy: 1796, 409
+  size: 66, 255
+  orig: 66, 255
+  offset: 0, 0
+  index: -1
+сolor_вalance_3_copy_3
+  rotate: true
+  xy: 1, 235
+  size: 732, 1102
+  orig: 752, 1102
+  offset: 0, 0
+  index: -1
