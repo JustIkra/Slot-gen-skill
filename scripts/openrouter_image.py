@@ -25,13 +25,13 @@ OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
 REMOVEBG_ENDPOINT = "https://api.remove.bg/v1.0/removebg"
 
 OPENROUTER_MODELS = {
-    "nano-banana-2": "google/gemini-3.1-flash-image-preview",
-    "nano-banana-pro": "google/gemini-3-pro-image-preview",
+    "nano-banana-2": "google/gemini-3.1-flash-image",
+    "nano-banana-pro": "google/gemini-3-pro-image",
 }
 
 VISION_MODELS = {
-    "gemini-flash": "google/gemini-2.5-flash",
-    "gemini-pro": "google/gemini-2.5-pro",
+    "gemini-flash": "google/gemini-3.5-flash",
+    "gemini-pro": "google/gemini-3.1-pro-preview",
 }
 
 SIZE_MAP = {

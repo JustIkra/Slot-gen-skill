@@ -65,9 +65,9 @@ const REASONING_EFFORTS: ReasoningEffort[] = [
 ];
 const PROVIDER_TAGS: ProviderTag[] = ["google-vertex/global", "google-ai-studio"];
 
-// The Pro image model (gemini-3-pro-image-preview) rejects the extreme "strip"
+// The Pro image model (gemini-3-pro-image) rejects the extreme "strip"
 // aspect ratios — observed live: 4:1 and 8:1 return HTTP 400
-// "aspect_ratio not supported ... Only google/gemini-3.1-flash-image-preview".
+// "aspect_ratio not supported ... Only google/gemini-3.1-flash-image".
 // Use nano-banana-2 for these. Listed so we fail fast with a clear message
 // instead of a confusing 400 (or, in --creative-variations, a partial run).
 const PRO_UNSUPPORTED_ASPECTS: AspectRatio[] = ["1:4", "4:1", "1:8", "8:1"];
@@ -75,9 +75,14 @@ const PRO_UNSUPPORTED_ASPECTS: AspectRatio[] = ["1:4", "4:1", "1:8", "8:1"];
 type RemoveBgSize = "auto" | "full" | "preview";
 const REMOVE_BG_SIZES: RemoveBgSize[] = ["auto", "full", "preview"];
 
+// GA stable image models (newer snapshot, best quality). NOTE: the GA aliases
+// max out at 2K — 4K is only available on the older -preview snapshots
+// (observed live: HTTP 400 "image_size '4K' is not supported ... Only
+// ...-preview... support 4K"). Use --size 2K with these; switch to the
+// -preview aliases only if you specifically need 4K.
 const OPENROUTER_MODELS: Record<Model, string> = {
-  "nano-banana-2": "google/gemini-3.1-flash-image-preview",
-  "nano-banana-pro": "google/gemini-3-pro-image-preview",
+  "nano-banana-2": "google/gemini-3.1-flash-image",
+  "nano-banana-pro": "google/gemini-3-pro-image",
 };
 
 const OPENROUTER_SIZE_MAP: Record<Size, string> = {

@@ -40,6 +40,11 @@ Battle-tested in a full production reskin — details in
   `scripts/chroma_key.py`. Both clients now warn on the downscale. Never upscale.
 - **`nano-banana-pro` rejects `4:1`/`8:1`/`1:4`/`1:8`** — use `nano-banana-2`
   for strips (the tool blocks this early with a clear error).
+- **The GA image models dropped 4K.** `google/gemini-3-pro-image` /
+  `gemini-3.1-flash-image` (the current GA aliases, best quality) max out at `--size 2K`;
+  only the older `…-preview` snapshots accept `--size 4K` (live: HTTP 400 "image_size '4K'
+  is not supported … Only …-preview… support 4K"). Use GA for the best 2K render; switch the
+  alias to `-preview` only when you specifically need 4K.
 - **`nano-banana-pro` + `--reference-image` intermittently returns "OpenRouter response contained
   no image data"** (the model "thinks" but emits no image — `reasoning_tokens>0`, exit 1). It is
   transient: **wrap the call in a 2–3× retry loop** (usually succeeds on retry 2), fall back to

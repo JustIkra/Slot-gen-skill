@@ -152,3 +152,41 @@ PIL + numpy on any candidate. The trustworthy ones:
 Note what NOT to over-weight: global **P98**, a fixed **corner/center vignette ratio**, and
 rigid **area quotas**. They measure pixels, not hierarchy, and forcing them produced the
 worst artifacts. Always end on the squint test, not a number.
+
+---
+
+## Rebuilding a flat promo as an editable layered PSD
+When the deliverable is an editable master (per-layer PSD) but you only have a flat render,
+decompose it first (see `art-generation.md` → "Decomposing a finished flat key-art"), then
+composite keyed layers — opaque parts (gold/stone/logo) via magenta + `chroma_key`,
+light/glow/smoke via black + luma-key on **screen**. Group as
+`01_bg / 02_frame / 03_hero / 04_logo / 06_grade` and write the PSD with pytoshop (set the
+merged `image_data` to the graded flatten so the PSD thumbnail matches the JPG).
+
+The polish levers that actually moved an art-director score from 5 → 9.5 (priority order):
+- **Ground the hero** — a hard, dark contact-AO ellipse where it meets the altar/base. A
+  floating hero with no contact shadow reads as a 2-D sticker.
+- **Restrain the hero's own glow + add a warm rim-light** — a flooded glow flattens volume;
+  pull it back to an accent and rim-light the edges to separate hero from frame.
+- **Separate the logo with a DARK backing** (plate / heavy multiply shadow), never a coloured
+  glow — coloured outer glow bleeds into a bright BG and kills legibility at thumbnail size.
+- **Gold = specular, not flat** — key the already-bright gold pixels and screen them back as
+  hot white/pale-yellow edge highlights, and deepen the core contrast. Matte gold reads as clay.
+- **Tie the magic light into the metal** — cyan rim-lights on the ring's inner lip and the
+  altar top edge make separately-rendered assets share one 3-D space.
+- **Lift background blacks but KEEP the vignette** — crushed-black architecture reads as a
+  cutout; raise the shadows so pillars/statues read, keep the corners dark for focus.
+
+## Art-director-in-the-loop (Gemini vision)
+Use a vision model (`gemini-3.1-pro-preview`) as a brutal AD pass — but **context decides
+signal quality**. Judging the tile alone, or against one image, is NOISY: scores swung
+6.5 → 5.5 → 4.5 → 5 → 3 across genuinely *improving* builds, with theatrical wording. Stabilise it:
+- Send the tile + the **real lobby grid** it will sit in + 2-3 **premium competitor tiles** +
+  the **studio's own released promo** (house quality bar) in ONE request.
+- State the **client constraints** up front (keep composition, keep crest size, no sparks,
+  brand logo can't be redesigned) so it stops re-flagging locked decisions.
+- Ask for "fair, concrete, consistent, no theatrics", ranked must-fixes only, a /10 and a ship
+  call. With that framing it became consistent and reached SHIP at 9.5/10.
+- **Trust your own eyes over a single noisy score** — verify each AD claim against the actual
+  composite before acting (it once called a clearly-bolder logo "thin/condensed", and dropped
+  the score 3 points on a logo swap while the rest was "locked & approved").

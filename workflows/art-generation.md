@@ -128,3 +128,38 @@ Hard-won during a complete Egyptian reskin of a live slot. They save hours.
   `scripts/recolor_lut.py --ramp gold --glob "sphere/s_*.png"`. Motion + alpha
   preserved, only hue changes. Remember the sibling layers too — a blue glow
   often has separate `light`/`blastwave` additive PNGs that also need recolouring.
+
+### Decomposing a finished flat key-art back into editable layers (Gemini inpaint)
+Battle-tested splitting a finished 1:1 promo (a single Nano-Banana-Pro render) into an
+editable, layered PSD — when you only have the flat hero image and need per-layer control.
+
+- **"Isolate ONLY element X on flat magenta" FAILS** with nano-banana-pro: fed the full scene
+  as `--reference-image`, the model re-renders the WHOLE composition instead of one element.
+- **What works: removal-with-inpaint.** Prompt "REMOVE ONLY <element>, INPAINT what is behind
+  it, keep ABSOLUTELY EVERYTHING ELSE pixel-identical". The model is reliable at *subtracting*
+  one thing and filling the hole. Run one removal per element from the SAME source
+  (parallelizable, no drift), then derive each cut layer as the **diff** `|source − removed|`
+  (threshold + region-gate + feather; take RGB from the source so baked light/shadows survive).
+  bg-plate + diffs stacked ≈ the original, now editable.
+- **Merge structurally-joined parts into ONE layer** (ring + crest + altar = one gold monument)
+  — a seam between them gets rejected. One removal for the whole group, or union the diffs.
+- **Strong magenta-isolation needs an explicit DO-NOT list** ("DO NOT draw the book/logo/
+  background; the ring CENTRE is empty flat magenta; EVERYTHING else is flat #FF00FF"), and even
+  then leaves residue inside enclosed areas → finish in PIL (fill the ring interior with a
+  magenta ellipse, keeping the baked rim-glow annulus).
+- **Logo isolation: feed a TIGHT CROP of just the title** as the reference, NOT the full scene.
+  Given the whole tile it redraws the whole tile; given a crop of the words it reproduces only
+  the lettering on magenta. AI also loves to **duplicate a word** (a third line) → magenta-fill
+  the dupe, then `trim` recovers the real logo.
+- **Strengthen a brand logo without changing its form**: reference the existing logo, ask to
+  "keep IDENTICAL letterforms/shape, ONLY brighten/saturate the fill + crisp the stroke + raise
+  contrast". Redrawing the font is usually off-limits (brand).
+- **Register a glow to its object** — do NOT `trim`+normalize the glow and object independently.
+  The glow's bbox is larger (rays spread out), so normalizing both to the same width shrinks the
+  glow's *core* below the object. Place the object, then place the glow at the SAME centre,
+  scaled LARGER so its core matches; rays extend past it.
+- **"Sparks" usually live in several layers at once** — the additive FX glow (cyan spark dots),
+  the atmosphere layer (warm embers) AND baked into the background plate. REGENERATE each source
+  clean ("no sparks, no specks, no floating particles"); do not mask them in post.
+- **Don't crush light to kill sparks.** A periphery "darken warm bright pixels" hack also crushes
+  legitimate torch/wall light to black. Fix the source layer; keep the composite grade clean.
