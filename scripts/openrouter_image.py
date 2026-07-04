@@ -1,11 +1,12 @@
 """
-openrouter_image.py — OpenRouter image generation + remove.bg client for Python.
+openrouter_image.py — OpenRouter image generation client for Python.
 
 Shared by the Spine pipeline (`split_character.py`) so that Python and the
 TypeScript CLI (`tools/generate-image.ts`) target the exact same backend.
 
-Reads OPENROUTER_KEY and REMOVEBG_API_KEY from the environment, falling back to
-~/.claude/.env if those variables are not already set in the shell.
+Reads OPENROUTER_KEY from the environment, falling back to ~/.claude/.env if it
+is not already set in the shell. Background removal is done with chroma keys
+(`chroma_key.py`, `key_flood.py`), not remove.bg.
 """
 
 from __future__ import annotations
@@ -22,7 +23,6 @@ from typing import Optional
 
 
 OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
-REMOVEBG_ENDPOINT = "https://api.remove.bg/v1.0/removebg"
 
 OPENROUTER_MODELS = {
     "nano-banana-2": "google/gemini-3.1-flash-image",
@@ -97,6 +97,7 @@ def generate_image(
     size: str = "2K",
     aspect_ratio: str = "1:1",
     reference_image: Optional[str] = None,
+    reference_images: Optional[list[str]] = None,
     transparent: bool = False,
     reasoning_effort: Optional[str] = None,
     reasoning_exclude: bool = True,
@@ -138,8 +139,11 @@ def generate_image(
         )
 
     content: list[dict] = []
+    refs = list(reference_images) if reference_images else []
     if reference_image:
-        mime, b64 = _encode_reference(reference_image)
+        refs.insert(0, reference_image)
+    for ref in refs:
+        mime, b64 = _encode_reference(ref)
         content.append({
             "type": "image_url",
             "image_url": {"url": f"data:{mime};base64,{b64}"},
@@ -279,76 +283,15 @@ def query_image(
     return text
 
 
-def remove_background(image_path: str, *, overwrite: bool = True, output: Optional[str] = None) -> str:
-    """Send *image_path* through remove.bg and write the cleaned PNG.
-
-    When *overwrite* is True (default), the original file is replaced.
-    Otherwise the result is written to *output* (required in that case).
-    """
-    api_key = _require_env("REMOVEBG_API_KEY")
-
-    target = image_path if overwrite else output
-    if target is None:
-        raise OpenRouterError("remove_background: output= required when overwrite=False")
-
-    boundary = "----slotgen-removebg-boundary"
-    src = Path(image_path).read_bytes()
-    body = (
-        f"--{boundary}\r\n"
-        f'Content-Disposition: form-data; name="size"\r\n\r\n'
-        f"auto\r\n"
-        f"--{boundary}\r\n"
-        f'Content-Disposition: form-data; name="image_file"; filename="image.png"\r\n'
-        f"Content-Type: image/png\r\n\r\n"
-    ).encode("utf-8") + src + f"\r\n--{boundary}--\r\n".encode("utf-8")
-
-    request = urllib.request.Request(
-        REMOVEBG_ENDPOINT,
-        data=body,
-        headers={
-            "X-Api-Key": api_key,
-            "Content-Type": f"multipart/form-data; boundary={boundary}",
-        },
-        method="POST",
-    )
-
-    try:
-        with urllib.request.urlopen(request, timeout=120) as resp:
-            cleaned = resp.read()
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", errors="replace")
-        raise OpenRouterError(f"remove.bg {exc.code}: {detail}") from exc
-
-    Path(target).parent.mkdir(parents=True, exist_ok=True)
-
-    # Warn if remove.bg downscaled the result. Free/preview plans cap output to
-    # ~0.25MP (~578x432) regardless of size=auto — a silent quality killer on UI
-    # assets. For full-res, generate on a solid magenta bg and use chroma_key.py.
-    before = _png_size(src)
-    after = _png_size(cleaned)
-    if before and after and after[0] * after[1] < before[0] * before[1] * 0.6:
-        print(
-            f"WARNING: remove.bg downscaled {before[0]}x{before[1]} -> "
-            f"{after[0]}x{after[1]} (plan caps resolution). For full-res assets "
-            f"use scripts/chroma_key.py on a magenta-bg generation instead.",
-            file=sys.stderr,
-        )
-
-    Path(target).write_bytes(cleaned)
-    return target
-
-
-def _png_size(data: bytes):
-    """(width, height) from a PNG IHDR, or None if not a PNG."""
-    if len(data) < 24 or data[:8] != b"\x89PNG\r\n\x1a\n":
-        return None
-    return (int.from_bytes(data[16:20], "big"), int.from_bytes(data[20:24], "big"))
+# Background removal is done with chroma keys, NOT remove.bg (which silently
+# downscales on free plans). Magenta-bg generation -> scripts/chroma_key.py for UI
+# parts; solid white/black-bg generation -> scripts/key_flood.py for logos/text.
 
 
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="OpenRouter image generation + remove.bg")
+    parser = argparse.ArgumentParser(description="OpenRouter image generation")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     gen = sub.add_parser("generate", help="Generate an image via OpenRouter")
@@ -361,8 +304,6 @@ if __name__ == "__main__":
                      choices=sorted(VALID_ASPECT_RATIOS))
     gen.add_argument("--reference-image", default=None)
     gen.add_argument("--transparent", action="store_true")
-    gen.add_argument("--remove-bg", action="store_true",
-                     help="Run remove.bg on the result")
     gen.add_argument("--reasoning", default=None,
                      choices=sorted(VALID_REASONING_EFFORTS),
                      help="Gemini thinking level via OpenRouter (default: off)")
@@ -371,11 +312,6 @@ if __name__ == "__main__":
     gen.add_argument("--provider", default=None,
                      choices=["google-vertex/global", "google-ai-studio"],
                      help="Force OpenRouter to route through a specific Google provider tag")
-
-    rb = sub.add_parser("remove-bg", help="Run remove.bg on an existing image")
-    rb.add_argument("--input", required=True)
-    rb.add_argument("--output", default=None,
-                    help="When set, write cleaned image here instead of overwriting --input")
 
     args = parser.parse_args()
 
@@ -394,16 +330,6 @@ if __name__ == "__main__":
                 provider_only=[args.provider] if args.provider else None,
             )
             print(f"saved: {path}")
-            if args.remove_bg:
-                remove_background(path, overwrite=True)
-                print(f"remove.bg: {path}")
-        elif args.cmd == "remove-bg":
-            if args.output:
-                remove_background(args.input, overwrite=False, output=args.output)
-                print(f"saved: {args.output}")
-            else:
-                remove_background(args.input, overwrite=True)
-                print(f"saved: {args.input}")
     except OpenRouterError as exc:
         print(f"error: {exc}", file=sys.stderr)
         sys.exit(1)

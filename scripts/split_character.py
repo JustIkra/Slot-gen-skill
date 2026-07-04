@@ -40,7 +40,6 @@ from atlas_prompts import DEFAULT_PARTS, build_atlas_prompt  # noqa: E402
 from openrouter_image import (  # noqa: E402
     OpenRouterError,
     generate_image,
-    remove_background,
 )
 
 
@@ -140,10 +139,6 @@ def main() -> None:
     parser.add_argument("--size", default="2K",
                         choices=["1K", "2K", "4K"])
     parser.add_argument("--aspect-ratio", default="1:1")
-    parser.add_argument("--remove-bg-atlas", action="store_true",
-                        help="Run remove.bg on the generated atlas before segmentation")
-    parser.add_argument("--remove-bg-parts", action="store_true",
-                        help="Run remove.bg on each segmented part PNG")
     parser.add_argument("--parts", nargs="+", default=None,
                         help="Override the body-part list (defaults to atlas_prompts.DEFAULT_PARTS)")
     parser.add_argument("--grid-cols", type=int, default=4,
@@ -167,10 +162,6 @@ def main() -> None:
             grid_cols=args.grid_cols,
         )
 
-        if args.remove_bg_atlas:
-            print("[1.5/3] Running remove.bg on atlas…")
-            remove_background(args.atlas_out, overwrite=True)
-
         print("[2/3] Segmenting parts…")
         parts = segment_parts(
             args.atlas_out,
@@ -182,11 +173,6 @@ def main() -> None:
         print(f"      Found {len(parts)} parts → {args.output_dir}/")
         for p in parts:
             print(f"        - {os.path.basename(p)}")
-
-        if args.remove_bg_parts:
-            print("[2.5/3] Running remove.bg on each part…")
-            for p in parts:
-                remove_background(p, overwrite=True)
 
         print("[3/3] Done.")
         print(f"\nParts are in: {args.output_dir}/")

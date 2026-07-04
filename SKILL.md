@@ -11,7 +11,6 @@ description: >
   "slot character", "generate art", "create asset", "spine animation", "rig this
   character", "make this walk", "split into body parts", "deconstruct sprite",
   "background remove", and similar phrases.
-user-invocable: true
 ---
 
 # Slot-Gen Skill
@@ -25,8 +24,10 @@ Single skill that ties together two flows:
 
 Both flows share the same backend:
 
-- **Image generation** — OpenRouter (`google/gemini-3.1-flash-image-preview` for
-  Nano Banana 2, `google/gemini-3-pro-image-preview` for Pro). No direct Google API.
+- **Image generation** — OpenRouter, GA-stable models: `google/gemini-3.1-flash-image`
+  (Nano Banana 2) and `google/gemini-3-pro-image` (Pro). No direct Google API.
+  GA caps at **2K**; `4K` returns HTTP 400 — only the older `…-image-preview` snapshots
+  support 4K, so switch to those aliases only when you specifically need 4K.
 - **Background removal** — remove.bg (`https://api.remove.bg/v1.0/removebg`), or
   full-res `scripts/chroma_key.py` for UI assets (see gotchas).
 
@@ -40,11 +41,6 @@ Battle-tested in a full production reskin — details in
   `scripts/chroma_key.py`. Both clients now warn on the downscale. Never upscale.
 - **`nano-banana-pro` rejects `4:1`/`8:1`/`1:4`/`1:8`** — use `nano-banana-2`
   for strips (the tool blocks this early with a clear error).
-- **The GA image models dropped 4K.** `google/gemini-3-pro-image` /
-  `gemini-3.1-flash-image` (the current GA aliases, best quality) max out at `--size 2K`;
-  only the older `…-preview` snapshots accept `--size 4K` (live: HTTP 400 "image_size '4K'
-  is not supported … Only …-preview… support 4K"). Use GA for the best 2K render; switch the
-  alias to `-preview` only when you specifically need 4K.
 - **`nano-banana-pro` + `--reference-image` intermittently returns "OpenRouter response contained
   no image data"** (the model "thinks" but emits no image — `reasoning_tokens>0`, exit 1). It is
   transient: **wrap the call in a 2–3× retry loop** (usually succeeds on retry 2), fall back to
@@ -66,6 +62,43 @@ Battle-tested in a full production reskin — details in
   distinct options and composite each behind the symbol for an A/B/C/D pick instead of regenerating blind.
 - **Derive a "calm" variant FROM the "lit" one** (remove the glow), never generate them independently —
   identical subject+bg, only the effect differs (critical for video anchors; see slot-spine-skin).
+- **Elements look like flat stickers "behind a film"? It's the COMPOSITING, not the assets.** Stop
+  stacking `screen` glow + 2D drop-shadows + 360° rim. Use the physical-light recipe in
+  `workflows/promo-composition.md` → "Compositing layers so elements DETACH": vignette baked into the
+  bg (not over the flatten), MULTIPLY cast shadows masked to the receiver, light-wrap (bg bleeds onto
+  rim) instead of a dark halo, directional rim (alpha-shift, not MaxFilter), color-DODGE local glow
+  instead of screen-milk. One refactor took a murky 1:1 master to real depth.
+- **`nano-banana-pro` also fails as a washed-out foggy smear** (not just "no image data") — retry;
+  detect with `black_frac=(rgb.min(2)<25).mean()` (proper black-bg ≳0.5) and `rgb.mean()` (foggy ≳150).
+- **Bake light onto a bg at the foreground's positions** by passing TWO refs (current bg + final promo)
+  in one gen call — POST the payload with two `image_url` parts yourself (`generate_image` takes one).
+- **Vision model as art director** (`query_image` with render+layers+script): the score is
+  frame-of-reference dependent (same file 9.5 vs 4 in one session) — pin the comparison set and judge
+  against YOUR studio's own released promo, not just tier-1 competitors. See promo-composition.md.
+- **Reviewing a whole promo SET? send ONE labelled contact sheet, not N images.** ~33 separate images
+  overflow the vision model → it spends the budget on reasoning and returns empty text. Tile them
+  (6×6, captioned `#n WxH`) into one image; it then critiques the set as a set.
+- **Paytable symbol blur for slot wrappers:** use exactly **3 visual layers** (`top > core > bottom`),
+  not Gaussian blur and not many ghost copies. Proven 8/10 recipe: source `wrapper/paytable/symbols`,
+  output `src/assets/images/opt/symbols/blur`; symmetric vertical motion blur radius `20`; top layer
+  requested `-20px` with crop-safe offset, opacity `60%`; bottom `+20px`, opacity `60%`; core opacity
+  `90%`; core center `70% original + 30% neutral-color blur`; blur color correction `color 1.00`,
+  `brightness 1.00`, `contrast 1.00`. Blur the core rim by **distance to alpha edge** while preserving
+  original alpha, so frames/rims soften by shape instead of leaving a hard top edge or dark bands.
+  Validate against the game's own reference blur with one labelled contact sheet and Gemini/OpenRouter
+  vision review; target score ≥7/10 before copying into `opt/symbols/blur`.
+- **Build ALL promo sizes from ONE parametric assembler**, not a canvas per size: a `layout(ar)` that
+  buckets by aspect ratio (beside ≥2.3 · centered ≈2:1 · stack portrait/square/landscape) feeding a
+  canvas-agnostic `build()`. Glow radii in px from the placed monument height so circles stay round.
+- **The bg vignette must NEVER dim the foreground.** Off-center monuments (beside/centered) look dim
+  because `light_wrap` samples the *vignetted* bg — feed it a separate NON-vignetted bright bg copy,
+  and add an isolated tight backlight bloom behind the ring. Don't move/widen the vignette to fake it.
+- **Metal specular = SCREEN warm `(255,215,120)`, never DODGE white** — dodge+white+low-threshold
+  blows gold to molten "lava". And the `255*power(.,1/1.06)` final gamma-lift in `flatten()` is the
+  "milky/behind-a-film" culprit — delete it; carry contrast with `(base-128)*1.10`.
+- **Re-skinning a magenta key asset via gen:** forbid baked radial light/glow/halo (it contaminates
+  the chroma key) — "ONLY texture + flat #FF00FF"; pass the raw un-keyed master render as a 2nd ref
+  so the re-skin matches scene light. See promo-composition.md.
 
 ## Temp working folder
 
@@ -95,8 +128,11 @@ If either is missing, the skill stops with a clear error before any spend.
 │   ├── package.json
 │   └── tsconfig.json
 ├── scripts/                      # Python pipeline
-│   ├── openrouter_image.py      # OpenRouter + remove.bg client used by Python
+│   ├── openrouter_image.py      # OpenRouter + remove.bg client (generate_image takes reference_images=[...] for multi-ref)
 │   ├── chroma_key.py            # full-res bg removal via magenta key (beats remove.bg for UI)
+│   ├── key_flood.py             # full-res key a logo off solid white/black bg (flood-fill + keep largest CC → drops sparks)
+│   ├── promo_compositor.py      # physical-light compositing primitives (light_wrap, cast_shadow_mul, directional_rim, multiply/dodge flatten)
+│   ├── art_director_review.py   # send render+layers(+script)+refs to a vision model for an art-director critique
 │   ├── recolor_lut.py           # re-theme images/animation frames by luminance→gradient
 │   ├── split_character.py       # character → deconstructed atlas → part PNGs
 │   ├── position_parts.py        # SIFT + RANSAC auto-positioning
@@ -122,6 +158,7 @@ User asks for…
 ├─ "Remove background from <file>"                   → tools/generate-image.ts --remove-bg
 ├─ "Full-res frame / button / logo (no quality loss)"→ generate on magenta bg, then scripts/chroma_key.py
 ├─ "Re-theme / recolor an asset or animation set"    → scripts/recolor_lut.py
+├─ "Create paytable symbol blur / opt symbols blur"  → use the 3-layer paytable blur recipe in Gotchas
 ├─ "Split this character into body parts"            → scripts/split_character.py
 ├─ "Position these parts against a reference"        → scripts/position_parts.py
 ├─ "Build a Spine skeleton + animations"             → scripts/build_spine_json.py
