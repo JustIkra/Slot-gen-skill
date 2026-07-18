@@ -52,4 +52,4 @@ req = urllib.request.Request("https://openrouter.ai/api/v1/videos", data=json.du
 - Cost ~$0.4 for a 5 s 720p clip. It's a paid, outward generation — only run when the user asked for motion.
 - `ffmpeg -i clip.mp4 f_%03d.png` numbers frames from 1. Sample by VISIBLE change, not raw pixel-diff.
 
-Keys: `OPENROUTER_KEY` (video + images), `REMOVEBG_API_KEY` (frame keying) in `~/.claude/.env`.
+Keys: `OPENROUTER_KEY` (video + images), `REMOVEBG_API_KEY` (frame keying) in `~/.codex/.env`.

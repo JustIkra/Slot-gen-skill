@@ -1,6 +1,6 @@
 # slot-gen-skill
 
-Claude Code skill that fuses the `/art` and `/spine-animation` skills behind one
+Codex skill that fuses the static-art and Spine-animation workflows behind one
 unified backend:
 
 - **OpenRouter** for all image generation (Nano Banana 2 / Pro).
@@ -13,8 +13,8 @@ the static-art flow and the Spine deconstruct/rig/animate pipeline.
 
 ```bash
 # 1. API keys
-echo 'OPENROUTER_KEY=sk-or-...'   >> ~/.claude/.env
-echo 'REMOVEBG_API_KEY=...'        >> ~/.claude/.env
+echo 'OPENROUTER_KEY=sk-or-...'   >> ~/.codex/.env
+echo 'REMOVEBG_API_KEY=...'        >> ~/.codex/.env
 
 # 2. Deps
 brew install oven-sh/bun/bun
@@ -31,6 +31,12 @@ python3 scripts/split_character.py ./input/character.png \
 ```
 
 Read `SKILL.md` for the full routing and `docs/` for setup + provider notes.
+
+For production Urso/Zephyr integration, the default profile is
+`@zephyr/slot-base 0.11.2`, Pixi 8, Spine 4.2, and exact
+`@esotericsoftware/spine-pixi-v8 4.2.119`. Confirm the target game's
+`package.json` and `package-lock.json` before using it, then pack runtime images
+through the Urso Texture Builder.
 
 ## Status
 

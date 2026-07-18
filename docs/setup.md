@@ -4,7 +4,7 @@
 
 Both flows need `OPENROUTER_KEY`. Background removal needs `REMOVEBG_API_KEY`.
 
-Put them in `~/.claude/.env` so both the TypeScript CLI and the Python scripts
+Put them in `~/.codex/.env` so both the TypeScript CLI and the Python scripts
 pick them up automatically:
 
 ```

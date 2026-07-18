@@ -62,7 +62,10 @@ def _kf(time, angle=None, x=None, y=None, curve=EASE):
     if y is not None:
         kf["y"] = round(y, 2)
     if curve:
-        kf["curve"] = curve
+        value_count = 1 if angle is not None else 2 if x is not None or y is not None else 1
+        if not isinstance(curve, list) or len(curve) not in (4, value_count * 4):
+            raise ValueError("Spine 4.2 bezier curves need four values per animated channel")
+        kf["curve"] = list(curve) if len(curve) == value_count * 4 else list(curve) * value_count
     return kf
 
 

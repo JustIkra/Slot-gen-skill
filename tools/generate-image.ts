@@ -13,7 +13,7 @@
  *   reference images in one request (e.g. a style ref + a character ref + a
  *   logo). All are attached as image_url parts after the text prompt.
  *
- * Env (loaded from ~/.claude/.env if not already in shell):
+ * Env (loaded from ~/.codex/.env if not already in shell):
  *   OPENROUTER_KEY     required
  *   REMOVEBG_API_KEY   required only when --remove-bg is used
  */
@@ -94,7 +94,7 @@ const OPENROUTER_SIZE_MAP: Record<Size, string> = {
 class CLIError extends Error {}
 
 async function loadEnv(): Promise<void> {
-  const envPath = resolve(process.env.HOME ?? "", ".claude/.env");
+  const envPath = resolve(process.env.HOME ?? "", ".codex/.env");
   if (!existsSync(envPath)) return;
   const text = await readFile(envPath, "utf8");
   for (const raw of text.split("\n")) {

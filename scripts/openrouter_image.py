@@ -4,7 +4,7 @@ openrouter_image.py — OpenRouter image generation client for Python.
 Shared by the Spine pipeline (`split_character.py`) so that Python and the
 TypeScript CLI (`tools/generate-image.ts`) target the exact same backend.
 
-Reads OPENROUTER_KEY from the environment, falling back to ~/.claude/.env if it
+Reads OPENROUTER_KEY from the environment, falling back to ~/.codex/.env if it
 is not already set in the shell. Background removal is done with chroma keys
 (`chroma_key.py`, `key_flood.py`), not remove.bg.
 """
@@ -54,7 +54,7 @@ class OpenRouterError(RuntimeError):
 
 
 def _load_dotenv() -> None:
-    env_path = Path.home() / ".claude" / ".env"
+    env_path = Path.home() / ".codex" / ".env"
     if not env_path.is_file():
         return
     for raw in env_path.read_text().splitlines():
@@ -76,7 +76,7 @@ def _require_env(name: str) -> str:
     if not value:
         raise OpenRouterError(
             f"Missing environment variable: {name}. "
-            f"Set it in your shell or in ~/.claude/.env"
+            f"Set it in your shell or in ~/.codex/.env"
         )
     return value
 

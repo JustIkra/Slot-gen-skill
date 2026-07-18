@@ -31,6 +31,30 @@ Both flows share the same backend:
 - **Background removal** — remove.bg (`https://api.remove.bg/v1.0/removebg`), or
   full-res `scripts/chroma_key.py` for UI assets (see gotchas).
 
+## Production runtime contract
+
+For current Urso/Zephyr slot work, inspect the target game's `package.json`,
+`package-lock.json`, and installed package source before authoring or integrating
+runtime assets. The supported production profile is:
+
+- exact direct `@zephyr/slot-base 0.11.2`;
+- Pixi 8 supplied transitively by Zephyr/Urso;
+- exact overridden `@esotericsoftware/spine-pixi-v8 4.2.119`;
+- Spine 4.2 JSON and matching 4.2 preview/parser tooling;
+- Urso Texture Builder for production PNG/WebP atlases and quality variants.
+
+Do not add a second direct Pixi, Urso, or Spine runtime dependency. Do not copy
+runtime recipes from another game: when an existing game resolves a different
+tree, follow that game's packages and installed source instead of keeping a
+separate old-version recipe in this skill.
+
+The package files and installed source are the sole source of truth for runtime
+APIs and build commands. Documentation is intentionally version-scoped to the
+profile above; do not maintain legacy Pixi/Spine/Urso instructions here. Before
+running an asset command, use the target package's `scripts` (and its installed
+Texture Builder entry point) rather than assuming a command copied from another
+project.
+
 ## Gotchas (save yourself hours)
 
 Battle-tested in a full production reskin — details in
@@ -108,7 +132,7 @@ alongside the assets; `/tmp` is opaque and wiped.
 
 ## Required environment
 
-API keys live in `~/.claude/.env` (or the shell environment):
+API keys live in `~/.codex/.env` (or the shell environment):
 
 ```
 OPENROUTER_KEY=sk-or-...

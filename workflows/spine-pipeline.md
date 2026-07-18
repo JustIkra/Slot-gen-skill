@@ -7,7 +7,7 @@ backed by OpenRouter (image gen) and optionally remove.bg.
 
 ```bash
 pip install -r scripts/requirements.txt
-# Set in shell or in ~/.claude/.env:
+# Set in shell or in ~/.codex/.env:
 #   OPENROUTER_KEY=...
 #   REMOVEBG_API_KEY=...
 ```
@@ -61,6 +61,11 @@ python3 scripts/build_spine_json.py \
 Built-in presets: `idle`, `walk`, `run`, `wave`, `jump`, `attack`. Custom
 animations can be embedded via `custom_animations` in the config.
 
+The generator emits Spine 4.2 JSON. A rotate bezier has four numbers; a
+translate/scale bezier has eight numbers because Spine 4.2 stores four control
+values per animated channel. Validate production output with the exact installed
+4.2 parser rather than accepting only a matching `skeleton.spine` string.
+
 ## Step 4 — Pack the texture atlas
 
 ```bash
@@ -83,6 +88,15 @@ python3 scripts/generate_spine_player.py \
 ```
 
 Open `out/preview.html` in a browser — official Spine Web Player, fully embedded.
+
+## Urso/Zephyr production integration
+
+Before copying an asset into a game, inspect that game's `package.json`,
+`package-lock.json`, and installed package source. The current production profile
+is exact `@zephyr/slot-base 0.11.2`, transitive Pixi 8, exact overridden
+`@esotericsoftware/spine-pixi-v8 4.2.119`, and Spine 4.2 JSON. Pack shared runtime
+textures with the Urso Texture Builder; use a dedicated Spine atlas only when the
+game's current loader contract explicitly requires one.
 
 ## Quick end-to-end recipe
 
