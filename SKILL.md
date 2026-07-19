@@ -2,8 +2,9 @@
 name: slot-gen
 description: >
   Unified slot-machine character pipeline that merges the /art and /spine-animation
-  skills behind a single backend — OpenRouter for image generation (Nano Banana 2 /
-  Nano Banana Pro) and remove.bg for background removal. Use this skill whenever the
+  skills with Codex-native image generation when available, OpenRouter image
+  generation (Nano Banana 2 / Nano Banana Pro), Gemini vision audit, and remove.bg
+  background removal. Use this skill whenever the
   user wants to (a) generate static character/icon/background art, (b) deconstruct a
   character image into separated body-part PNGs, (c) auto-position parts against a
   reference, (d) build a Spine 2D skeleton with idle/walk/run/wave/jump/attack
@@ -15,19 +16,35 @@ description: >
 
 # Slot-Gen Skill
 
-Single skill that ties together two flows:
+Single skill that ties together two flows and can use either the Codex-native image
+API or the OpenRouter command-line backend when the current runtime exposes it:
 
 | Flow             | Entry point                  | What it does                                                            |
 |------------------|------------------------------|--------------------------------------------------------------------------|
 | **Art**          | `workflows/art-generation.md` | Generate one-shot images (characters, icons, backgrounds, decorations). |
 | **Spine**        | `workflows/spine-pipeline.md` | Take a character → deconstruct → rig → animate → preview.               |
 
-Both flows share the same backend:
+Available image backends:
 
-- **Image generation** — OpenRouter, GA-stable models: `google/gemini-3.1-flash-image`
-  (Nano Banana 2) and `google/gemini-3-pro-image` (Pro). No direct Google API.
-  GA caps at **2K**; `4K` returns HTTP 400 — only the older `…-image-preview` snapshots
-  support 4K, so switch to those aliases only when you specifically need 4K.
+- **Codex-native image API** — when running inside Codex and the
+  `image_gen.imagegen` tool is available, it may be used directly for new bitmap
+  generation and image editing. Use it when the user asks to use Codex's own API,
+  or when an interactive one-shot generation/edit is the shortest path. For a new
+  image, omit image references. For an edit, inspect the source first and pass the
+  exact local source paths as references. Copy the accepted output into the
+  project's `./.tmp_<name>/` folder before asset processing/integration.
+- **OpenRouter image generation** — use the bundled scripts when an exact Gemini
+  model, reproducible CLI run, multi-reference payload, batch workflow, or
+  OpenRouter-specific control is required. GA-stable models are
+  `google/gemini-3.1-flash-image` (Nano Banana 2) and
+  `google/gemini-3-pro-image` (Pro). No direct Google API.
+- **Gemini vision audit** — continue to use `scripts/art_director_review.py`
+  through OpenRouter. Native image generation does not replace the independent
+  Gemini critique step.
+
+OpenRouter GA caps at **2K**; `4K` returns HTTP 400 — only the older
+`…-image-preview` snapshots support 4K, so switch to those aliases only when you
+specifically need 4K.
 - **Background removal** — remove.bg (`https://api.remove.bg/v1.0/removebg`), or
   full-res `scripts/chroma_key.py` for UI assets (see gotchas).
 
