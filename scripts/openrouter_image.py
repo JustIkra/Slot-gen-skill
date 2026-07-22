@@ -5,8 +5,8 @@ Shared by the Spine pipeline (`split_character.py`) so that Python and the
 TypeScript CLI (`tools/generate-image.ts`) target the exact same backend.
 
 Reads OPENROUTER_KEY from the environment, falling back to ~/.codex/.env if it
-is not already set in the shell. Background removal is done with chroma keys
-(`chroma_key.py`, `key_flood.py`), not remove.bg.
+is not already set in the shell. Full-resolution transparency cleanup uses
+local chroma-key tools (`chroma_key.py`, `key_flood.py`).
 """
 
 from __future__ import annotations
@@ -283,9 +283,8 @@ def query_image(
     return text
 
 
-# Background removal is done with chroma keys, NOT remove.bg (which silently
-# downscales on free plans). Magenta-bg generation -> scripts/chroma_key.py for UI
-# parts; solid white/black-bg generation -> scripts/key_flood.py for logos/text.
+# Magenta-background generation pairs with scripts/chroma_key.py for UI parts;
+# solid white/black backgrounds pair with scripts/key_flood.py for logos and text.
 
 
 if __name__ == "__main__":

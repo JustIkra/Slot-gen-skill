@@ -6,22 +6,19 @@ individual transparent PNGs.
 
 Pipeline:
   1. Send the reference character image to OpenRouter → flat atlas with all
-     body parts laid out and separated on a white background.
-  2. (Optional) Run remove.bg on the atlas before segmentation.
-  3. Use OpenCV connected-components analysis to crop each part into its own
-     transparent PNG.
+     body parts laid out and separated on a controlled solid background.
+  2. Use OpenCV connected-components analysis to crop each part into its own
+     transparent PNG locally.
 
 Usage:
     python3 split_character.py character.png \\
         --output-dir parts/ \\
         --atlas-out atlas.png \\
         [--model nano-banana-2] [--size 2K] [--aspect-ratio 1:1] \\
-        [--remove-bg-atlas] [--remove-bg-parts] \\
         [--min-area 500] [--padding 12] [--bg-threshold 240]
 
 Env:
     OPENROUTER_KEY     required
-    REMOVEBG_API_KEY   required if --remove-bg-atlas or --remove-bg-parts is set
 """
 
 from __future__ import annotations

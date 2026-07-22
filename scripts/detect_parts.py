@@ -4,20 +4,17 @@ detect_parts.py — direct body-part extraction from a reference character image
 
 No atlas redraw, no SIFT. Sends the original image to Gemini Flash via
 OpenRouter, asks for bounding boxes of each body part as JSON, then crops
-those regions out of the original PNG. Optionally cleans each crop with
-remove.bg.
+those regions out of the original PNG.
 
 Usage:
     python3 detect_parts.py character.png \\
         --output-dir parts/ \\
         [--layout-out layout.json] \\
         [--model gemini-flash | gemini-pro] \\
-        [--remove-bg] \\
         [--padding 8]
 
 Env:
     OPENROUTER_KEY     required
-    REMOVEBG_API_KEY   required if --remove-bg is set
 """
 
 from __future__ import annotations
@@ -32,7 +29,7 @@ from typing import Optional
 from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from openrouter_image import OpenRouterError, query_image, remove_background  # noqa: E402
+from openrouter_image import OpenRouterError, query_image  # noqa: E402
 
 
 DEFAULT_PARTS = [
@@ -150,7 +147,6 @@ def main() -> None:
                         choices=["gemini-flash", "gemini-pro"])
     parser.add_argument("--parts", nargs="+", default=None,
                         help="Override default body-part list")
-    parser.add_argument("--remove-bg", action="store_true")
     parser.add_argument("--padding", type=int, default=8)
     args = parser.parse_args()
 
@@ -160,16 +156,20 @@ def main() -> None:
     parts = args.parts or DEFAULT_PARTS
 
     try:
-        print(f"[1/3] Detecting bboxes via Gemini ({args.model})…")
+        print(f"[1/2] Detecting bboxes via Gemini ({args.model})…")
         bboxes = detect(args.input_image, parts=parts, model=args.model)
         if not bboxes:
             raise SystemExit("Gemini did not return any bounding boxes")
         print(f"      Detected {len(bboxes)} parts: {list(bboxes.keys())}")
 
-        print("[2/3] Cropping parts from the original image…")
+        print("[2/2] Cropping parts from the original image…")
         img = Image.open(args.input_image)
-        layout = crop_parts(args.input_image, bboxes, args.output_dir,
-                            padding_px=args.padding)
+        layout = crop_parts(
+            args.input_image,
+            bboxes,
+            args.output_dir,
+            padding_px=args.padding,
+        )
 
         layout_obj = {
             "reference_image": Path(args.input_image).name,
@@ -182,15 +182,7 @@ def main() -> None:
         Path(layout_path).write_text(json.dumps(layout_obj, indent=2))
         print(f"      Layout: {layout_path}")
 
-        if args.remove_bg:
-            print("[3/3] Running remove.bg on each part…")
-            for name in layout:
-                remove_background(str(Path(args.output_dir) / f"{name}.png"),
-                                  overwrite=True)
-        else:
-            print("[3/3] Skipping remove.bg (use --remove-bg to enable)")
-
-        print(f"\nDone. {len(layout)} clean parts in {args.output_dir}/")
+        print(f"\nDone. {len(layout)} parts in {args.output_dir}/")
     except OpenRouterError as exc:
         print(f"error: {exc}", file=sys.stderr)
         sys.exit(1)

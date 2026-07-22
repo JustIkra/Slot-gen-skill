@@ -3,12 +3,11 @@
 
 Why this exists
 ---------------
-remove.bg on the free / preview plan silently downscales every result to
-~0.25 MP (about 578x432) regardless of `size=auto`. For UI assets — frames,
-buttons, logos, banners — that destroys quality. The reliable full-res path is:
+UI assets such as frames, buttons, logos, and banners must preserve their
+generated source resolution. The reliable full-resolution path is:
 
   1. Generate the asset on a SOLID CHROMA background (magenta #FF00FF works best
-     because nothing in gold/Egyptian art is magenta) WITHOUT --remove-bg.
+     because nothing in gold/Egyptian art is magenta).
   2. Key the chroma out here at full native resolution.
 
 This keeps every pixel the model produced, then you downscale to the target

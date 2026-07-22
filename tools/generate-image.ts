@@ -1,12 +1,12 @@
 #!/usr/bin/env bun
 /**
- * generate-image — OpenRouter image generator with optional remove.bg cleanup.
+ * generate-image — OpenRouter image generator.
  *
  * Shared backend for the slot-gen skill (art flow and Spine flow).
  *
  * Usage:
  *   bun run generate-image.ts --prompt "..." [--size 2K] [--aspect-ratio 1:1]
- *                             [--reference-image path ...] [--remove-bg]
+ *                             [--reference-image path ...]
  *                             [--output /path/out.png]
  *
  *   --reference-image is repeatable: pass it multiple times to send several
@@ -15,7 +15,6 @@
  *
  * Env (loaded from ~/.codex/.env if not already in shell):
  *   OPENROUTER_KEY     required
- *   REMOVEBG_API_KEY   required only when --remove-bg is used
  */
 
 import { readFile, writeFile } from "node:fs/promises";
@@ -39,8 +38,6 @@ interface Args {
   output: string;
   referenceImages?: string[];
   transparent?: boolean;
-  removeBg?: boolean;
-  removeBgSize?: RemoveBgSize;
   variations?: number;
   reasoning?: ReasoningEffort;
   reasoningIncludeTrace?: boolean;
@@ -71,9 +68,6 @@ const PROVIDER_TAGS: ProviderTag[] = ["google-vertex/global", "google-ai-studio"
 // Use nano-banana-2 for these. Listed so we fail fast with a clear message
 // instead of a confusing 400 (or, in --creative-variations, a partial run).
 const PRO_UNSUPPORTED_ASPECTS: AspectRatio[] = ["1:4", "4:1", "1:8", "8:1"];
-
-type RemoveBgSize = "auto" | "full" | "preview";
-const REMOVE_BG_SIZES: RemoveBgSize[] = ["auto", "full", "preview"];
 
 // GA stable image models (newer snapshot, best quality). NOTE: the GA aliases
 // max out at 2K — 4K is only available on the older -preview snapshots
@@ -133,13 +127,6 @@ OPTIONS:
                            Repeatable — pass multiple times to attach several
                            reference images in a single request.
   --transparent            Prepend transparent-background hint to the prompt
-  --remove-bg              Pipe result through remove.bg API after generation
-  --remove-bg-size <s>     remove.bg output size: auto (default) | full | preview.
-                           NOTE: free/preview plans cap output to ~0.25MP
-                           (~578x432) no matter what — this silently wrecks UI
-                           assets. For full-res frames/buttons/logos generate on
-                           a solid magenta (#FF00FF) background WITHOUT --remove-bg,
-                           then key it with scripts/chroma_key.py.
   --reasoning <effort>     Gemini thinking via OpenRouter: ${REASONING_EFFORTS.join(" | ")}
                            (default off; adds reasoning_tokens billing)
   --reasoning-trace        Surface reasoning text in console (default excluded)
@@ -149,7 +136,6 @@ OPTIONS:
 
 ENV:
   OPENROUTER_KEY           required
-  REMOVEBG_API_KEY         required for --remove-bg
 `);
   process.exit(0);
 }
@@ -171,7 +157,6 @@ function parseArgs(argv: string[]): Args {
     const key = flag.slice(2);
 
     if (key === "transparent")      { out.transparent = true; continue; }
-    if (key === "remove-bg")        { out.removeBg = true; continue; }
     if (key === "reasoning-trace")  { out.reasoningIncludeTrace = true; continue; }
 
     const value = a[i + 1];
@@ -222,12 +207,6 @@ function parseArgs(argv: string[]): Args {
         }
         out.provider = value as ProviderTag;
         break;
-      case "remove-bg-size":
-        if (!REMOVE_BG_SIZES.includes(value as RemoveBgSize)) {
-          throw new CLIError(`--remove-bg-size must be one of ${REMOVE_BG_SIZES.join(",")}`);
-        }
-        out.removeBgSize = value as RemoveBgSize;
-        break;
       default: throw new CLIError(`Unknown flag: ${flag}`);
     }
     i++;
@@ -245,12 +224,6 @@ function parseArgs(argv: string[]): Args {
   }
 
   return out as Args;
-}
-
-/** Read width/height from a PNG IHDR (bytes 16-23, big-endian). 0 if unknown. */
-function pngSize(buf: Buffer): { w: number; h: number } {
-  if (buf.length < 24 || buf.readUInt32BE(0) !== 0x89504e47) return { w: 0, h: 0 };
-  return { w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) };
 }
 
 const TRANSPARENT_PREFIX =
@@ -365,43 +338,6 @@ async function generate(args: Args, finalPrompt: string, outPath: string): Promi
   console.log(`[openrouter] saved ${outPath}`);
 }
 
-async function removeBackground(imagePath: string, size: RemoveBgSize = "auto"): Promise<void> {
-  const apiKey = process.env.REMOVEBG_API_KEY;
-  if (!apiKey) throw new CLIError("REMOVEBG_API_KEY is not set");
-
-  console.log(`[remove.bg] cleaning ${imagePath} (size=${size})`);
-  const buf = await readFile(imagePath);
-  const before = pngSize(buf);
-  const form = new FormData();
-  form.append("image_file", new Blob([buf]), "image.png");
-  form.append("size", size);
-
-  const resp = await fetch("https://api.remove.bg/v1.0/removebg", {
-    method: "POST",
-    headers: { "X-Api-Key": apiKey },
-    body: form,
-  });
-  if (!resp.ok) {
-    const errText = await resp.text();
-    throw new CLIError(`remove.bg ${resp.status}: ${errText}`);
-  }
-  const out = Buffer.from(await resp.arrayBuffer());
-  await writeFile(imagePath, out);
-
-  const after = pngSize(out);
-  // Free / preview plans downscale to ~0.25MP regardless of size=auto. Warn
-  // loudly so it is never a silent quality loss on UI assets.
-  if (before.w && after.w && after.w * after.h < before.w * before.h * 0.6) {
-    console.warn(
-      `[remove.bg] WARNING: output ${after.w}x${after.h} is much smaller than ` +
-      `input ${before.w}x${before.h} — your plan is capping resolution ` +
-      `(free=preview ~0.25MP). For full-res UI assets, generate on a solid ` +
-      `magenta background and use scripts/chroma_key.py instead.`,
-    );
-  }
-  console.log(`[remove.bg] done (${after.w}x${after.h})`);
-}
-
 async function main(): Promise<void> {
   try {
     await loadEnv();
@@ -414,17 +350,13 @@ async function main(): Promise<void> {
       const tasks: Promise<void>[] = [];
       for (let i = 1; i <= args.variations; i++) {
         const out = `${base}-v${i}.png`;
-        tasks.push((async () => {
-          await generate(args, prompt, out);
-          if (args.removeBg) await removeBackground(out, args.removeBgSize ?? "auto");
-        })());
+        tasks.push(generate(args, prompt, out));
       }
       await Promise.all(tasks);
       return;
     }
 
     await generate(args, prompt, args.output);
-    if (args.removeBg) await removeBackground(args.output, args.removeBgSize ?? "auto");
   } catch (err) {
     if (err instanceof CLIError) {
       console.error(`error: ${err.message}`);

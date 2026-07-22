@@ -1,5 +1,5 @@
 """Full-res keying of a logo / text / UI part generated on a SOLID background
-(white OR black), when remove.bg would downscale and magenta wasn't used.
+(white OR black) when magenta was not used.
 
 Flood-fills the background from the image border on a "flatness" mask, then keeps
 ONLY the largest connected foreground component — which drops the detached sparks /
