@@ -66,26 +66,26 @@ class SkillContractTests(unittest.TestCase):
                 offenders[str(path.relative_to(ROOT))] = matches
         self.assertEqual(offenders, {})
 
-    def test_art_audit_uses_luna_pro(self) -> None:
+    def test_all_vision_queries_use_luna_pro(self) -> None:
         module_path = ROOT / "scripts" / "openrouter_image.py"
         spec = importlib.util.spec_from_file_location("openrouter_image", module_path)
         module = importlib.util.module_from_spec(spec)
         assert spec and spec.loader
         spec.loader.exec_module(module)
         self.assertEqual(
-            module.VISION_MODELS["art-audit"],
-            "openai/gpt-5.6-luna-pro",
+            module.VISION_MODELS,
+            {"vision": "openai/gpt-5.6-luna-pro"},
         )
 
-        result = run_help(
-            sys.executable,
-            "-B",
+        for script in (
             "scripts/art_director_review.py",
-            "--help",
-        )
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("GPT-5.6 Luna Pro", result.stdout)
-        self.assertNotIn("--model", result.stdout)
+            "scripts/detect_parts.py",
+        ):
+            with self.subTest(script=script):
+                result = run_help(sys.executable, "-B", script, "--help")
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn("GPT-5.6 Luna Pro", result.stdout)
+                self.assertNotIn("--model", result.stdout)
 
     def test_python_clis_start_without_provider_keys(self) -> None:
         for script in (
