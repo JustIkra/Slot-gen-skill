@@ -1,28 +1,22 @@
 ---
 name: slot-gen
 description: >
-  Unified slot-machine character pipeline that merges the /art and /spine-animation
-  skills with Codex-native image generation when available, OpenRouter image
-  generation (Nano Banana 2 / Nano Banana Pro), Gemini vision audit, and remove.bg
-  background removal. Use this skill whenever the
-  user wants to (a) generate static character/icon/background art, (b) deconstruct a
-  character image into separated body-part PNGs, (c) auto-position parts against a
-  reference, (d) build a Spine 2D skeleton with idle/walk/run/wave/jump/attack
-  animations, or (e) produce an interactive Spine Web Player preview. Triggers on
-  "slot character", "generate art", "create asset", "spine animation", "rig this
-  character", "make this walk", "split into body parts", "deconstruct sprite",
-  "background remove", and similar phrases.
+  Use when generating slot characters, symbols, icons, backgrounds, promo art, or
+  image-to-video motion; reviewing game art; separating a character into body-part
+  PNGs; positioning parts; building a Spine 4.2 skeleton and animations; packing a
+  Spine atlas; or producing an interactive Spine Web Player preview.
 ---
 
 # Slot-Gen Skill
 
-Single skill that ties together two flows and can use either the Codex-native image
-API or the OpenRouter command-line backend when the current runtime exposes it:
+Single skill that ties together four production flows:
 
-| Flow             | Entry point                  | What it does                                                            |
-|------------------|------------------------------|--------------------------------------------------------------------------|
-| **Art**          | `workflows/art-generation.md` | Generate one-shot images (characters, icons, backgrounds, decorations). |
-| **Spine**        | `workflows/spine-pipeline.md` | Take a character → deconstruct → rig → animate → preview.               |
+| Flow        | Entry point                       | What it does                                                            |
+|-------------|-----------------------------------|-------------------------------------------------------------------------|
+| **Art**     | `workflows/art-generation.md`     | Generate characters, icons, backgrounds, and decorations.              |
+| **Promo**   | `workflows/promo-composition.md`  | Compose and audit lobby thumbnails, banners, and key art.               |
+| **Video**   | `workflows/video-generation.md`   | Generate coherent motion clips for attachment sequences.               |
+| **Spine**   | `workflows/spine-pipeline.md`     | Deconstruct → position → rig → animate → pack → preview in Spine 4.2.  |
 
 Available image backends:
 
@@ -38,15 +32,14 @@ Available image backends:
   OpenRouter-specific control is required. GA-stable models are
   `google/gemini-3.1-flash-image` (Nano Banana 2) and
   `google/gemini-3-pro-image` (Pro). No direct Google API.
-- **Gemini vision audit** — continue to use `scripts/art_director_review.py`
-  through OpenRouter. Native image generation does not replace the independent
-  Gemini critique step.
+- **OpenRouter vision analysis** — all image questions, technical detection, and
+  art-direction audits use `openai/gpt-5.6-luna-pro`. Gemini is generation-only.
+- **Local transparency cleanup** — use native alpha, `scripts/chroma_key.py`, or
+  `scripts/key_flood.py` so processing stays at source resolution.
 
 OpenRouter GA caps at **2K**; `4K` returns HTTP 400 — only the older
 `…-image-preview` snapshots support 4K, so switch to those aliases only when you
 specifically need 4K.
-- **Background removal** — remove.bg (`https://api.remove.bg/v1.0/removebg`), or
-  full-res `scripts/chroma_key.py` for UI assets (see gotchas).
 
 ## Production runtime contract
 
@@ -77,9 +70,9 @@ project.
 Battle-tested in a full production reskin — details in
 `workflows/art-generation.md` → "Lessons from a full production reskin":
 
-- **remove.bg free plan caps output to ~578×432** → blurry UI. For frames/
-  buttons/logos generate on solid magenta `#FF00FF` (no `--remove-bg`) then
-  `scripts/chroma_key.py`. Both clients now warn on the downscale. Never upscale.
+- **Preserve source resolution for transparency.** For frames, buttons, and
+  logos, generate on solid magenta `#FF00FF`, then use `scripts/chroma_key.py`.
+  Use `scripts/key_flood.py` for solid black or white backgrounds. Never upscale.
 - **`nano-banana-pro` rejects `4:1`/`8:1`/`1:4`/`1:8`** — use `nano-banana-2`
   for strips (the tool blocks this early with a clear error).
 - **`nano-banana-pro` + `--reference-image` intermittently returns "OpenRouter response contained
@@ -126,8 +119,8 @@ Battle-tested in a full production reskin — details in
   `90%`; core center `70% original + 30% neutral-color blur`; blur color correction `color 1.00`,
   `brightness 1.00`, `contrast 1.00`. Blur the core rim by **distance to alpha edge** while preserving
   original alpha, so frames/rims soften by shape instead of leaving a hard top edge or dark bands.
-  Validate against the game's own reference blur with one labelled contact sheet and Gemini/OpenRouter
-  vision review; target score ≥7/10 before copying into `opt/symbols/blur`.
+  Validate against the game's own reference blur with one labelled contact sheet and GPT-5.6 Luna Pro
+  review through OpenRouter; target score ≥7/10 before copying into `opt/symbols/blur`.
 - **Build ALL promo sizes from ONE parametric assembler**, not a canvas per size: a `layout(ar)` that
   buckets by aspect ratio (beside ≥2.3 · centered ≈2:1 · stack portrait/square/landscape) feeding a
   canvas-agnostic `build()`. Glow radii in px from the placed monument height so circles stay round.
@@ -149,14 +142,13 @@ alongside the assets; `/tmp` is opaque and wiped.
 
 ## Required environment
 
-API keys live in `~/.codex/.env` (or the shell environment):
+The API key lives in `~/.codex/.env` (or the shell environment):
 
 ```
 OPENROUTER_KEY=sk-or-...
-REMOVEBG_API_KEY=...
 ```
 
-If either is missing, the skill stops with a clear error before any spend.
+If it is missing, remote commands stop with a clear error before any spend.
 
 ## Layout
 
@@ -165,18 +157,22 @@ If either is missing, the skill stops with a clear error before any spend.
 ├── SKILL.md
 ├── README.md
 ├── tools/
-│   ├── generate-image.ts        # OpenRouter + remove.bg CLI (TypeScript, bun)
+│   ├── generate-image.ts        # OpenRouter image-generation CLI (TypeScript, bun)
 │   ├── package.json
 │   └── tsconfig.json
 ├── scripts/                      # Python pipeline
-│   ├── openrouter_image.py      # OpenRouter + remove.bg client (generate_image takes reference_images=[...] for multi-ref)
-│   ├── chroma_key.py            # full-res bg removal via magenta key (beats remove.bg for UI)
+│   ├── openrouter_image.py      # image generation + GPT-5.6 Luna Pro vision client
+│   ├── chroma_key.py            # full-resolution transparency via solid-colour key
 │   ├── key_flood.py             # full-res key a logo off solid white/black bg (flood-fill + keep largest CC → drops sparks)
 │   ├── promo_compositor.py      # physical-light compositing primitives (light_wrap, cast_shadow_mul, directional_rim, multiply/dodge flatten)
-│   ├── art_director_review.py   # send render+layers(+script)+refs to a vision model for an art-director critique
+│   ├── art_director_review.py   # GPT-5.6 Luna Pro critique of render+layers+refs
 │   ├── recolor_lut.py           # re-theme images/animation frames by luminance→gradient
 │   ├── split_character.py       # character → deconstructed atlas → part PNGs
+│   ├── segment_grid_atlas.py    # split a labelled uniform atlas by grid cell
 │   ├── position_parts.py        # SIFT + RANSAC auto-positioning
+│   ├── canonical_layout.py      # canonical humanoid fallback layout
+│   ├── compose_layout.py        # render layout.json for visual inspection
+│   ├── build_skeleton_v2.py     # 21-part schema → Spine config
 │   ├── build_spine_json.py      # Spine 4.2 skeleton + animation generator
 │   ├── make_atlas.py            # Pack parts → Spine .atlas + .png
 │   ├── generate_spine_player.py # Self-contained Spine Web Player HTML
@@ -184,6 +180,7 @@ If either is missing, the skill stops with a clear error before any spend.
 ├── workflows/
 │   ├── art-generation.md
 │   ├── promo-composition.md     # numeric composition rules for promo/lobby thumbnails
+│   ├── video-generation.md
 │   └── spine-pipeline.md
 └── docs/
     ├── setup.md
@@ -196,8 +193,9 @@ If either is missing, the skill stops with a clear error before any spend.
 User asks for…
 
 ├─ "Generate an image / icon / background"           → workflows/art-generation.md
-├─ "Remove background from <file>"                   → tools/generate-image.ts --remove-bg
+├─ "Make an asset transparent"                       → scripts/chroma_key.py or scripts/key_flood.py
 ├─ "Full-res frame / button / logo (no quality loss)"→ generate on magenta bg, then scripts/chroma_key.py
+├─ "Audit / critique this art"                       → scripts/art_director_review.py (GPT-5.6 Luna Pro)
 ├─ "Re-theme / recolor an asset or animation set"    → scripts/recolor_lut.py
 ├─ "Create paytable symbol blur / opt symbols blur"  → use the 3-layer paytable blur recipe in Gotchas
 ├─ "Split this character into body parts"            → scripts/split_character.py
@@ -218,14 +216,13 @@ From any shell / Bash tool:
 bun run tools/generate-image.ts \
   --prompt "Cartoon slot machine wild symbol, neon, transparent background" \
   --size 2K --aspect-ratio 1:1 \
-  --output ./out/wild.png \
-  --remove-bg
+  --output ./out/wild.png
 ```
 
 From Python (used by the Spine pipeline):
 
 ```python
-from openrouter_image import generate_image, remove_background
+from openrouter_image import generate_image
 
 generate_image(
     prompt="Sprite sheet of body parts …",
@@ -234,7 +231,6 @@ generate_image(
     aspect_ratio="1:1",
     reference_image="character.png",
 )
-remove_background("atlas.png", overwrite=True)
 ```
 
 ## Notes on the merge
@@ -247,7 +243,7 @@ backends:
 - `/spine-animation` used `google.genai` from Python inside `split_character.py`.
   That call is now routed through `scripts/openrouter_image.py`, so a single
   `OPENROUTER_KEY` covers both flows.
-- `remove.bg` was an optional `--remove-bg` flag in `/art`. Here it is a
-  first-class step exposed to both flows (TS CLI flag + Python helper).
+- Gemini models generate images; GPT-5.6 Luna Pro handles every image-analysis
+  and art-direction query through the same OpenRouter client.
 
 Read `docs/setup.md` before the first run.

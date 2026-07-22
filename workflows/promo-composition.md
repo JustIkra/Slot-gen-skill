@@ -193,7 +193,7 @@ layers (see below).
 ## Using a vision model as art director (and its trap)
 
 Send the rendered promo + the cut layers (+ optionally the assembler script text)
-to `gemini-pro` via `openrouter_image.query_image(prompt, images)` for a critique.
+to GPT-5.6 Luna Pro via `openrouter_image.query_image(prompt, images)` for a critique.
 Two hard-won caveats:
 
 - **The score is frame-of-reference dependent and noisy.** The SAME file scored
@@ -219,8 +219,8 @@ Removing wall torches + a clean white center burst this way beat any procedural 
 
 ## Keying a logo/text off a solid bg at full res (flood-fill, keep largest CC)
 
-remove.bg caps free output (~600px). For a logo generated on solid white OR black,
-key full-res yourself: flood-fill the bg from the border on a "flatness" mask
+For a logo generated on solid white OR black, key full-resolution locally:
+flood-fill the background from the border on a "flatness" mask
 (`min>230 & sat<22` for white, `max<45` for black), then **keep only the largest
 connected foreground component** (`scipy.ndimage.label`) — this drops detached
 sparks/embers the model sprinkles in. `MinFilter` erode the alpha a few px to thin

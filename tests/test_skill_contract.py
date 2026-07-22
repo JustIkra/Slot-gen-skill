@@ -57,7 +57,12 @@ class SkillContractTests(unittest.TestCase):
             )
 
     def test_external_background_removal_service_is_absent(self) -> None:
-        forbidden = ("remove.bg", "REMOVEBG_API_KEY", "api.remove.bg", "--remove-bg")
+        forbidden = (
+            "remove" + ".bg",
+            "REMOVE" + "BG_API_KEY",
+            "api." + "remove" + ".bg",
+            "--remove" + "-bg",
+        )
         offenders: dict[str, list[str]] = {}
         for path in active_text_files():
             text = path.read_text(errors="ignore")
@@ -101,7 +106,7 @@ class SkillContractTests(unittest.TestCase):
         result = run_help("bun", "run", "tools/generate-image.ts", "--help")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertNotIn("remove-bg", result.stdout)
-        self.assertNotIn("REMOVEBG_API_KEY", result.stdout)
+        self.assertNotIn("REMOVE" + "BG_API_KEY", result.stdout)
 
 
 if __name__ == "__main__":

@@ -1,10 +1,10 @@
-# Slot-Gen Spine 4.2 and Luna Art Audit Cleanup Implementation Plan
+# Slot-Gen Spine 4.2, Local Keying, and Luna Vision Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make Spine 4.2 the sole supported format, remove the external background-removal service completely, and route art audits through GPT-5.6 Luna Pro on OpenRouter.
+**Goal:** Make Spine 4.2 the sole supported format, use local full-resolution keying, and route every vision query through GPT-5.6 Luna Pro on OpenRouter.
 
-**Architecture:** Keep the existing OpenRouter transport and separate image generation from text-based visual audit. Enforce the migration with one offline contract suite that scans active skill files, checks CLI startup, and validates the audit model mapping without making paid calls.
+**Architecture:** Keep the existing OpenRouter transport and separate Gemini image generation from GPT-5.6 Luna Pro image analysis. Enforce the migration with one offline contract suite that scans active skill files, checks CLI startup, and validates the sole vision-model mapping without making paid calls.
 
 **Tech Stack:** Python 3 standard library `unittest`, Bun/TypeScript, OpenRouter chat completions, Spine 4.2 JSON.
 
@@ -12,8 +12,8 @@
 
 - Spine 4.2 is the only supported Spine format.
 - Background cleanup uses native alpha, `scripts/chroma_key.py`, or `scripts/key_flood.py` only.
-- Art audits use `openai/gpt-5.6-luna-pro` through OpenRouter and `OPENROUTER_KEY`.
-- Gemini remains allowed only for non-audit technical vision operations.
+- Every image-analysis and art-audit query uses `openai/gpt-5.6-luna-pro` through OpenRouter and `OPENROUTER_KEY`.
+- Gemini remains only in the image-generation registry.
 - Do not add `OPENAI_API_KEY`, a direct OpenAI client, or a second provider transport.
 - Do not run paid image or vision requests during verification.
 - Exclude `docs/superpowers/` from forbidden-term scans because it contains historical design and implementation records.
@@ -85,7 +85,12 @@ class SkillContractTests(unittest.TestCase):
             self.assertFalse((ROOT / "reference" / f"characters_nick.{suffix}").exists())
 
     def test_external_background_removal_service_is_absent(self) -> None:
-        forbidden = ("remove.bg", "REMOVEBG_API_KEY", "api.remove.bg", "--remove-bg")
+        forbidden = (
+            "remove" + ".bg",
+            "REMOVE" + "BG_API_KEY",
+            "api." + "remove" + ".bg",
+            "--remove" + "-bg",
+        )
         offenders: dict[str, list[str]] = {}
         for path in active_text_files():
             text = path.read_text(errors="ignore")
@@ -94,21 +99,26 @@ class SkillContractTests(unittest.TestCase):
                 offenders[str(path.relative_to(ROOT))] = matches
         self.assertEqual(offenders, {})
 
-    def test_art_audit_uses_luna_pro(self) -> None:
+    def test_all_vision_queries_use_luna_pro(self) -> None:
         module_path = ROOT / "scripts" / "openrouter_image.py"
         spec = importlib.util.spec_from_file_location("openrouter_image", module_path)
         module = importlib.util.module_from_spec(spec)
         assert spec and spec.loader
         spec.loader.exec_module(module)
         self.assertEqual(
-            module.VISION_MODELS["art-audit"],
-            "openai/gpt-5.6-luna-pro",
+            module.VISION_MODELS,
+            {"vision": "openai/gpt-5.6-luna-pro"},
         )
 
-        result = run_help(sys.executable, "-B", "scripts/art_director_review.py", "--help")
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("GPT-5.6 Luna Pro", result.stdout)
-        self.assertNotIn("--model", result.stdout)
+        for script in (
+            "scripts/art_director_review.py",
+            "scripts/detect_parts.py",
+        ):
+            with self.subTest(script=script):
+                result = run_help(sys.executable, "-B", script, "--help")
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn("GPT-5.6 Luna Pro", result.stdout)
+                self.assertNotIn("--model", result.stdout)
 
     def test_python_clis_start_without_provider_keys(self) -> None:
         for script in (
@@ -124,7 +134,7 @@ class SkillContractTests(unittest.TestCase):
         result = run_help("bun", "run", "tools/generate-image.ts", "--help")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertNotIn("remove-bg", result.stdout)
-        self.assertNotIn("REMOVEBG_API_KEY", result.stdout)
+        self.assertNotIn("REMOVE" + "BG_API_KEY", result.stdout)
 
 
 if __name__ == "__main__":
@@ -135,7 +145,7 @@ if __name__ == "__main__":
 
 Run: `python3 -B -m unittest tests/test_skill_contract.py -v`
 
-Expected: FAIL for the legacy reference, forbidden service terms, missing `art-audit` model mapping, and `detect_parts.py` import error. No test may make a network request.
+Expected: FAIL for the legacy reference, forbidden service terms, non-Luna vision mappings, and `detect_parts.py` import error. No test may make a network request.
 
 - [ ] **Step 3: Commit the RED baseline**
 
@@ -277,35 +287,34 @@ git add tools/generate-image.ts scripts/openrouter_image.py scripts/detect_parts
 git commit -m "refactor: remove external background cleanup service"
 ```
 
-### Task 4: Route art audit to GPT-5.6 Luna Pro
+### Task 4: Route every vision query to GPT-5.6 Luna Pro
 
 **Files:**
 - Modify: `scripts/openrouter_image.py`
 - Modify: `scripts/art_director_review.py`
+- Modify: `scripts/detect_parts.py`
 
 **Interfaces:**
-- Consumes: `query_image(prompt: str, images: list[str], model: str)` and `OPENROUTER_KEY`.
-- Produces: `VISION_MODELS["art-audit"] == "openai/gpt-5.6-luna-pro"` and a fixed-model audit CLI.
+- Consumes: `query_image(prompt: str, images: list[str])` and `OPENROUTER_KEY`.
+- Produces: `VISION_MODELS == {"vision": "openai/gpt-5.6-luna-pro"}` and fixed-model vision CLIs.
 
-- [ ] **Step 1: Run the audit contract and confirm it fails**
+- [ ] **Step 1: Run the vision contract and confirm it fails**
 
-Run: `python3 -B -m unittest tests.test_skill_contract.SkillContractTests.test_art_audit_uses_luna_pro -v`
+Run: `python3 -B -m unittest tests.test_skill_contract.SkillContractTests.test_all_vision_queries_use_luna_pro -v`
 
-Expected: FAIL because the `art-audit` alias does not exist and the CLI still defaults to Gemini.
+Expected: FAIL because Gemini technical-vision aliases still exist and `detect_parts.py` exposes a model override.
 
-- [ ] **Step 2: Add the explicit audit mapping**
+- [ ] **Step 2: Add the sole vision mapping**
 
 Set the registry in `scripts/openrouter_image.py` to:
 
 ```python
 VISION_MODELS = {
-    "art-audit": "openai/gpt-5.6-luna-pro",
-    "gemini-flash": "google/gemini-3.5-flash",
-    "gemini-pro": "google/gemini-3.1-pro-preview",
+    "vision": "openai/gpt-5.6-luna-pro",
 }
 ```
 
-This preserves technical Gemini consumers while making the audit path explicit.
+Remove the `model` parameter from `query_image()` and always select `VISION_MODELS["vision"]`.
 
 - [ ] **Step 3: Make the art-audit CLI deterministic**
 
@@ -313,15 +322,17 @@ In `scripts/art_director_review.py`:
 
 - identify GPT-5.6 Luna Pro in the module docstring and parser description;
 - delete the public `--model` option;
-- call `query_image(..., model="art-audit")` unconditionally.
+- call `query_image(...)` without a model override.
+
+In `scripts/detect_parts.py`, remove the `model` argument and `--model` CLI option, identify GPT-5.6 Luna Pro in help output, and call `query_image(...)` without a model override.
 
 The final call must be:
 
 ```python
-print(query_image("\n\n".join(parts), args.images, model="art-audit"))
+print(query_image("\n\n".join(parts), args.images))
 ```
 
-- [ ] **Step 4: Run the audit contract**
+- [ ] **Step 4: Run the vision contract**
 
 Run the command from Step 1.
 
@@ -330,8 +341,8 @@ Expected: PASS without a provider key or network request because only `--help` a
 - [ ] **Step 5: Commit the audit migration**
 
 ```bash
-git add scripts/openrouter_image.py scripts/art_director_review.py
-git commit -m "feat: use GPT-5.6 Luna Pro for art audit"
+git add scripts/openrouter_image.py scripts/art_director_review.py scripts/detect_parts.py
+git commit -m "refactor: use Luna Pro for all vision queries"
 ```
 
 ### Task 5: Synchronize active skill documentation
@@ -362,8 +373,8 @@ Apply these exact policy changes across the listed files:
 
 - replace the retired service with native alpha, `chroma_key.py`, or `key_flood.py`;
 - list only `OPENROUTER_KEY` as required environment;
-- identify `openai/gpt-5.6-luna-pro` as the art-direction audit model;
-- retain Gemini wording only for technical body-part detection;
+- identify `openai/gpt-5.6-luna-pro` as the sole image-analysis and art-direction model;
+- restrict Gemini wording and model IDs to image generation;
 - state Spine 4.2 as the sole format;
 - remove obsolete Python commands and flags;
 - add `workflows/video-generation.md`, `scripts/segment_grid_atlas.py`, `scripts/canonical_layout.py`, `scripts/compose_layout.py`, and `scripts/build_skeleton_v2.py` to the Layout tree in `SKILL.md`;

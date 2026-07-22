@@ -48,8 +48,9 @@ req = urllib.request.Request("https://openrouter.ai/api/v1/videos", data=json.du
 - **first_frame + last_frame** anchor start/end → controllable interpolation (closed book → chosen open pose).
 - Prompt must forbid the failure mode (camera drift, parts flying off, flattening) or the model will do it.
 - Generate the subject on flat **magenta** so the frames can be keyed afterwards. To keep baked glow/beams,
-  chroma-key (magenta); for soft/paper subjects key extracted frames with **remove.bg** (chroma tears paper).
+  chroma-key the frames locally. For soft paper edges, request native alpha anchors and keep the chroma
+  threshold conservative so the page contour is preserved.
 - Cost ~$0.4 for a 5 s 720p clip. It's a paid, outward generation — only run when the user asked for motion.
 - `ffmpeg -i clip.mp4 f_%03d.png` numbers frames from 1. Sample by VISIBLE change, not raw pixel-diff.
 
-Keys: `OPENROUTER_KEY` (video + images), `REMOVEBG_API_KEY` (frame keying) in `~/.codex/.env`.
+Key: `OPENROUTER_KEY` for video, image generation, and vision analysis in `~/.codex/.env`.

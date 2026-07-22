@@ -1,20 +1,20 @@
 # slot-gen-skill
 
-Codex skill that fuses the static-art and Spine-animation workflows behind one
-unified backend:
+Codex skill that fuses static-art, art-direction audit, image-to-video, and
+Spine 4.2 animation workflows behind one unified OpenRouter backend:
 
 - **OpenRouter** for all image generation (Nano Banana 2 / Pro).
-- **remove.bg** for background removal.
+- **GPT-5.6 Luna Pro** for every image-analysis and art-direction query.
+- **Local full-resolution keying** for transparency cleanup.
 
-No direct Google Gemini calls anywhere — a single `OPENROUTER_KEY` covers both
-the static-art flow and the Spine deconstruct/rig/animate pipeline.
+A single `OPENROUTER_KEY` covers image generation, technical vision, art audit,
+and the Spine deconstruct/rig/animate pipeline.
 
 ## Quick start
 
 ```bash
-# 1. API keys
+# 1. API key
 echo 'OPENROUTER_KEY=sk-or-...'   >> ~/.codex/.env
-echo 'REMOVEBG_API_KEY=...'        >> ~/.codex/.env
 
 # 2. Deps
 brew install oven-sh/bun/bun
@@ -22,12 +22,15 @@ pip install -r scripts/requirements.txt
 
 # 3. Art flow
 bun run tools/generate-image.ts \
-  --prompt "Cartoon slot wild symbol" --size 2K --aspect-ratio 1:1 \
-  --output ./out/wild.png --remove-bg
+  --prompt "Cartoon slot wild symbol on a solid magenta background" --size 2K --aspect-ratio 1:1 \
+  --output ./out/wild-raw.png
+
+python3 scripts/chroma_key.py \
+  --input ./out/wild-raw.png --output ./out/wild.png
 
 # 4. Spine flow
 python3 scripts/split_character.py ./input/character.png \
-  --output-dir ./work/parts --atlas-out ./work/atlas.png --remove-bg-parts
+  --output-dir ./work/parts --atlas-out ./work/atlas.png
 ```
 
 Read `SKILL.md` for the full routing and `docs/` for setup + provider notes.
@@ -38,14 +41,11 @@ For production Urso/Zephyr integration, the default profile is
 `package.json` and `package-lock.json` before using it, then pack runtime images
 through the Urso Texture Builder.
 
-## Status
+## Current contract
 
-Initial scaffold (2026-05-26):
-
-- ✅ Unified OpenRouter + remove.bg backend (`tools/generate-image.ts` and
-  `scripts/openrouter_image.py`)
-- ✅ Spine scripts copied from upstream (`position_parts`, `build_spine_json`,
-  `make_atlas`, `generate_spine_player`)
-- ✅ `split_character.py` rewritten to use OpenRouter instead of Gemini direct
-- ⏭ Next: smoke tests with real API keys, then any slot-machine specific
-  workflows (reel layouts, paytable graphics, etc.)
+- OpenRouter image generation with reproducible TypeScript and Python clients.
+- GPT-5.6 Luna Pro for art audit and technical image analysis.
+- Local full-resolution chroma and flood-fill keying.
+- Spine 4.2 deconstruction, positioning, skeleton generation, atlas packing,
+  animation presets, and standalone preview.
+- Urso/Zephyr runtime guidance and production promo-composition workflows.

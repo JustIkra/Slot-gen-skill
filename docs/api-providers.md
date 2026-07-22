@@ -1,23 +1,23 @@
 # API providers
 
-The slot-gen skill talks to exactly two upstream services. There is no other
-provider matrix — that is the whole point of the merge.
+The slot-gen skill uses OpenRouter as its only upstream API provider.
 
 ## OpenRouter
 
 Endpoint: `https://openrouter.ai/api/v1/chat/completions`
 
-| Local model name | OpenRouter ID                              |
-|------------------|--------------------------------------------|
-| `nano-banana-2`  | `google/gemini-3.1-flash-image-preview`    |
-| `nano-banana-pro`| `google/gemini-3-pro-image-preview`        |
+| Local model name | OpenRouter ID                       | Purpose |
+|------------------|-------------------------------------|---------|
+| `nano-banana-2`  | `google/gemini-3.1-flash-image`     | Image generation |
+| `nano-banana-pro`| `google/gemini-3-pro-image`         | Image generation |
+| `vision`         | `openai/gpt-5.6-luna-pro`           | All image analysis and critique |
 
 Request shape (used by both `tools/generate-image.ts` and
 `scripts/openrouter_image.py`):
 
 ```json
 {
-  "model": "google/gemini-3.1-flash-image-preview",
+  "model": "google/gemini-3.1-flash-image",
   "messages": [{ "role": "user", "content": [
     { "type": "image_url", "image_url": { "url": "data:image/png;base64,..." } },
     { "type": "text", "text": "<prompt>" }
@@ -77,47 +77,30 @@ Kept:
 - **Reasoning / thinking** (added back after verification).
 - **Provider routing** — `provider: { only: [...] }` to pin Vertex vs AI Studio.
 
-## remove.bg
+### Art-direction audit
 
-Endpoint: `https://api.remove.bg/v1.0/removebg`
+`scripts/art_director_review.py` sends one or more images and an optional
+assembler script to GPT-5.6 Luna Pro. Every image-analysis path, including
+technical body-part detection, is fixed to `openai/gpt-5.6-luna-pro`; the CLIs
+do not expose a vision-model override. Gemini models are used only for image
+generation.
 
-Multipart POST with `image_file` and `size` (`auto` default; `full`/`preview`
-also accepted via `--remove-bg-size`). Header `X-Api-Key: $REMOVEBG_API_KEY`.
-The response body is the cleaned PNG.
+### Local transparency cleanup
 
-Used in three places:
+Transparency post-processing stays at source resolution and does not call a
+remote cleanup provider:
 
-1. `tools/generate-image.ts` — `--remove-bg` flag (art flow).
-2. `scripts/openrouter_image.py remove-bg` — stand-alone Python CLI.
-3. `scripts/split_character.py` — `--remove-bg-atlas` and `--remove-bg-parts`
-   flags inside the Spine pipeline.
-
-### ⚠ Resolution cap (read before using on UI assets)
-
-On the **free / preview plan, remove.bg downscales every result to ~0.25 MP
-(~578×432)** no matter what `size` you send — `size=full` returns
-`402 / auth_failed` without a paid plan. This silently destroys frames, buttons,
-logos and banners (you only notice when the upscaled asset looks soft in-game).
-
-Both clients now **warn** when the output is much smaller than the input
-(`tools/generate-image.ts` and `openrouter_image.py`). When you see that warning:
-
-- **Full-res transparency without remove.bg** — generate the asset on a SOLID
-  magenta (`#FF00FF`) background **without** `--remove-bg`, then key it at native
-  resolution with `scripts/chroma_key.py` (key → erode → de-spill → optional
-  downscale). Magenta is safe for gold/Egyptian art (nothing is magenta) and the
-  keyer is tuned not to eat lapis-blue studs/panels. Then downscale to the target
-  size — **never upscale past the source**.
-- Subjects/characters (where remove.bg's matting is genuinely better than a flat
-  key) on a paid plan: pass `--remove-bg-size full`.
+- `scripts/chroma_key.py` removes a controlled solid chroma background with
+  erosion, de-spill, optional trimming, and optional downscaling.
+- `scripts/key_flood.py` flood-fills solid black or white backgrounds and keeps
+  the largest connected foreground component.
+- Native alpha can be used directly when the generator returns clean edges.
 
 ## Cost / quota notes
 
 - OpenRouter charges per image. Use `--size 1K` previews before final 2K/4K.
-- remove.bg consumes one credit per call. The atlas cleanup is a single call;
-  per-part cleanup multiplies by the number of body parts (typically 10–15).
-- If quota is a concern, segment first, inspect, and only run remove.bg on the
-  parts that need it (manual call to `openrouter_image.py remove-bg`).
+- GPT-5.6 Luna Pro art audit is token-billed. Review a labelled contact sheet
+  instead of many individual images when auditing a large promo set.
 
 ## Known issues
 

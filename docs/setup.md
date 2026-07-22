@@ -1,21 +1,20 @@
 # Setup
 
-## 1. API keys
+## 1. API key
 
-Both flows need `OPENROUTER_KEY`. Background removal needs `REMOVEBG_API_KEY`.
+All remote flows use `OPENROUTER_KEY`: Gemini image generation, GPT-5.6 Luna
+Pro image analysis and art audit, and video generation.
 
 Put them in `~/.codex/.env` so both the TypeScript CLI and the Python scripts
 pick them up automatically:
 
 ```
 OPENROUTER_KEY=sk-or-...
-REMOVEBG_API_KEY=...
 ```
 
-The shell environment overrides the file. Get keys at:
+The shell environment overrides the file. Get the key at:
 
 - OpenRouter — https://openrouter.ai/keys
-- remove.bg — https://www.remove.bg/dashboard#api-key
 
 ## 2. TypeScript runtime (art flow + CLI)
 
@@ -34,7 +33,7 @@ bun --version
 bun run tools/generate-image.ts --help
 ```
 
-## 3. Python deps (Spine flow)
+## 3. Python deps (Spine and local keying flows)
 
 ```bash
 pip install -r scripts/requirements.txt
@@ -61,3 +60,6 @@ python3 scripts/openrouter_image.py generate \
 ```
 
 If both files appear and are non-empty, the merge is wired up correctly.
+
+For full-resolution transparency cleanup, generate on a controlled solid
+background and use `scripts/chroma_key.py` or `scripts/key_flood.py` locally.

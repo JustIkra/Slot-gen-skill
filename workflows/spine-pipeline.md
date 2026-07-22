@@ -1,7 +1,7 @@
 # Spine animation pipeline
 
-Turn a single character image into a fully animated Spine character — every step
-backed by OpenRouter (image gen) and optionally remove.bg.
+Turn a single character image into a fully animated Spine 4.2 character with
+OpenRouter image generation, GPT-5.6 Luna Pro analysis, and local keying.
 
 ## Prerequisites
 
@@ -9,7 +9,6 @@ backed by OpenRouter (image gen) and optionally remove.bg.
 pip install -r scripts/requirements.txt
 # Set in shell or in ~/.codex/.env:
 #   OPENROUTER_KEY=...
-#   REMOVEBG_API_KEY=...
 ```
 
 ## Inputs (pick one)
@@ -26,13 +25,12 @@ pip install -r scripts/requirements.txt
 ```bash
 python3 scripts/split_character.py character.png \
   --output-dir parts/ \
-  --atlas-out atlas.png \
-  --remove-bg-parts
+  --atlas-out atlas.png
 ```
 
-- `--remove-bg-atlas` cleans the AI-generated atlas before segmentation.
-- `--remove-bg-parts` cleans each segmented PNG (recommended for clean alpha).
-- Uses OpenRouter (`google/gemini-3.1-flash-image-preview` by default) under the
+- The generated atlas uses a controlled solid background and is segmented
+  locally into transparent PNGs.
+- Uses OpenRouter (`google/gemini-3.1-flash-image` by default) under the
   hood — no Google API key required.
 
 ## Step 2 — Auto-position parts against the reference
@@ -103,7 +101,7 @@ game's current loader contract explicitly requires one.
 ```bash
 # 1. Deconstruct
 python3 scripts/split_character.py ./input/character.png \
-  --output-dir ./work/parts --atlas-out ./work/atlas.png --remove-bg-parts
+  --output-dir ./work/parts --atlas-out ./work/atlas.png
 
 # 2. Position
 python3 scripts/position_parts.py \

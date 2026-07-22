@@ -9,7 +9,7 @@ User asks for one of:
 - "Generate a slot symbol / wild / scatter"
 - "Make a background for the reel area"
 - "Create a character portrait"
-- "Remove background from this image"
+- "Make this asset transparent"
 - "Give me 3 variations of X"
 
 ## Steps
@@ -25,8 +25,9 @@ User asks for one of:
    - `1K` — quick previews, cheapest.
    - `2K` — default for finals.
    - `4K` — only when print or zoom is required.
-4. Add `--transparent` for sprites that must drop straight onto a reel canvas, or
-   add `--remove-bg` to clean the result through remove.bg afterwards.
+4. For sprites, request native alpha with `--transparent` or generate on a
+   controlled solid background and clean it locally with `chroma_key.py` or
+   `key_flood.py`.
 
 > Note: OpenRouter advertises `0.5K` for `google/gemini-3.1-flash-image-preview`,
 > but Google AI Studio currently rejects it with `INVALID_ARGUMENT`. Until that
@@ -43,14 +44,17 @@ bun run tools/generate-image.ts \
   --output ./out/wild-preview.png
 ```
 
-Final reel symbol with background stripped through remove.bg:
+Final reel symbol generated on a controlled chroma background and keyed locally:
 
 ```bash
 bun run tools/generate-image.ts \
-  --prompt "Cartoon golden lion mascot, dynamic pose, neon outline, slot wild symbol" \
+  --prompt "Cartoon golden lion mascot, dynamic pose, neon outline, slot wild symbol, solid magenta background" \
   --size 2K --aspect-ratio 1:1 \
-  --output ./out/wild.png \
-  --remove-bg
+  --output ./out/wild-raw.png
+
+python3 scripts/chroma_key.py \
+  --input ./out/wild-raw.png \
+  --output ./out/wild.png
 ```
 
 Three variations of a background:
@@ -64,12 +68,13 @@ bun run tools/generate-image.ts \
   --output ./out/bg.png
 ```
 
-Stand-alone remove.bg call (e.g., user uploaded an image):
+Stand-alone full-resolution keying call:
 
 ```bash
-python3 scripts/openrouter_image.py remove-bg \
-  --input ./uploads/user-symbol.png \
-  --output ./out/user-symbol.png
+python3 scripts/key_flood.py \
+  ./uploads/user-symbol-on-black.png \
+  ./out/user-symbol.png \
+  --bg black
 ```
 
 ## Prompt tips (carried over from /art)
@@ -84,16 +89,13 @@ python3 scripts/openrouter_image.py remove-bg \
 Hard-won during a complete Egyptian reskin of a live slot. They save hours.
 
 ### Transparency / quality
-- **Don't trust `--remove-bg` for UI assets.** Free/preview remove.bg silently
-  caps output to ~578×432 → soft, ruined frames/buttons/logos. For frames,
-  buttons, banners, logos: generate on a **solid magenta `#FF00FF`** background
-  (no `--remove-bg`), then `scripts/chroma_key.py --input raw.png --output
-  clean.png --resize WxH`. Full native resolution, clean edges.
-- **Never upscale.** Generate ≥ the target size and downscale. Upscaling a
-  remove.bg-shrunk PNG is the #1 cause of "blurry in-game".
-- remove.bg is still fine for organic **characters** (matting beats a flat key)
-  — but watch the downscale warning, and use `--remove-bg-size full` on a paid
-  plan.
+- For frames, buttons, banners, and logos, generate on a **solid magenta
+  `#FF00FF`** background, then use `scripts/chroma_key.py --input raw.png
+  --output clean.png --resize WxH`. This preserves native resolution and clean
+  edges.
+- For solid black or white backgrounds, use `scripts/key_flood.py` to remove
+  the border-connected background while retaining the largest foreground part.
+- **Never upscale.** Generate at or above target size and downscale once.
 
 ### Model / aspect ratio
 - **`nano-banana-pro` rejects extreme strip ratios** (`4:1`, `8:1`, `1:4`,
