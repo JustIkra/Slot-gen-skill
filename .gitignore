@@ -16,6 +16,7 @@ node_modules/
 .playwright-mcp/
 .tmp/
 .tmp_audiotest/
+.worktrees/
 
 # Build / generated artifacts
 images.zip
