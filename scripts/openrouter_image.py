@@ -30,9 +30,7 @@ OPENROUTER_MODELS = {
 }
 
 VISION_MODELS = {
-    "art-audit": "openai/gpt-5.6-luna-pro",
-    "gemini-flash": "google/gemini-3.5-flash",
-    "gemini-pro": "google/gemini-3.1-pro-preview",
+    "vision": "openai/gpt-5.6-luna-pro",
 }
 
 SIZE_MAP = {
@@ -228,14 +226,11 @@ def query_image(
     prompt: str,
     images: list[str],
     *,
-    model: str = "gemini-flash",
     response_format: Optional[dict] = None,
 ) -> str:
     """Send *images* + *prompt* to a vision model via OpenRouter and
     return the raw text response. Use *response_format* to request JSON output.
     """
-    if model not in VISION_MODELS:
-        raise OpenRouterError(f"Unknown vision model '{model}'. Valid: {list(VISION_MODELS)}")
     api_key = _require_env("OPENROUTER_KEY")
 
     content: list[dict] = [{"type": "text", "text": prompt}]
@@ -247,7 +242,7 @@ def query_image(
         })
 
     payload: dict = {
-        "model": VISION_MODELS[model],
+        "model": VISION_MODELS["vision"],
         "messages": [{"role": "user", "content": content}],
     }
     if response_format:

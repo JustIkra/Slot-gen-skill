@@ -53,7 +53,7 @@ def main():
         "приоритетный список правок. Отметь, что решается КОМПОЗИТОМ, а что требует лучших "
         f"АССЕТОВ/оверпейнта. Отвечай на языке: {args.lang}."
     )
-    print(query_image("\n\n".join(parts), args.images, model="art-audit"))
+    print(query_image("\n\n".join(parts), args.images))
 
 
 if __name__ == "__main__":

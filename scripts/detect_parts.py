@@ -2,7 +2,7 @@
 """
 detect_parts.py — direct body-part extraction from a reference character image.
 
-No atlas redraw, no SIFT. Sends the original image to Gemini Flash via
+No atlas redraw, no SIFT. Sends the original image to GPT-5.6 Luna Pro via
 OpenRouter, asks for bounding boxes of each body part as JSON, then crops
 those regions out of the original PNG.
 
@@ -10,7 +10,6 @@ Usage:
     python3 detect_parts.py character.png \\
         --output-dir parts/ \\
         [--layout-out layout.json] \\
-        [--model gemini-flash | gemini-pro] \\
         [--padding 8]
 
 Env:
@@ -102,9 +101,8 @@ def detect(
     image_path: str,
     *,
     parts: list[str] = DEFAULT_PARTS,
-    model: str = "gemini-flash",
 ) -> dict[str, dict[str, float]]:
-    raw = query_image(_prompt(parts), [image_path], model=model)
+    raw = query_image(_prompt(parts), [image_path])
     return _parse_bboxes(raw)
 
 
@@ -143,8 +141,6 @@ def main() -> None:
     parser.add_argument("--output-dir", default="parts")
     parser.add_argument("--layout-out", default=None,
                         help="Where to write the layout JSON (defaults to <output-dir>/layout.json)")
-    parser.add_argument("--model", default="gemini-flash",
-                        choices=["gemini-flash", "gemini-pro"])
     parser.add_argument("--parts", nargs="+", default=None,
                         help="Override default body-part list")
     parser.add_argument("--padding", type=int, default=8)
@@ -156,10 +152,10 @@ def main() -> None:
     parts = args.parts or DEFAULT_PARTS
 
     try:
-        print(f"[1/2] Detecting bboxes via Gemini ({args.model})…")
-        bboxes = detect(args.input_image, parts=parts, model=args.model)
+        print("[1/2] Detecting bboxes via GPT-5.6 Luna Pro…")
+        bboxes = detect(args.input_image, parts=parts)
         if not bboxes:
-            raise SystemExit("Gemini did not return any bounding boxes")
+            raise SystemExit("GPT-5.6 Luna Pro did not return any bounding boxes")
         print(f"      Detected {len(bboxes)} parts: {list(bboxes.keys())}")
 
         print("[2/2] Cropping parts from the original image…")
