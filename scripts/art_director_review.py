@@ -1,10 +1,10 @@
 """Send a render (+ its cut layers, + competitor/own-studio refs, + optionally the
-assembler SCRIPT text) to a vision model for an art-director critique.
+assembler SCRIPT text) to GPT-5.6 Luna Pro for an art-director critique.
 
     python art_director_review.py \
         --images out/master.jpg refs/lobby_grid.png refs/our_studio_promo.jpg \
         --question "Does our promo (image 1) reach our own studio bar (image 3)?" \
-        [--script assemble.py] [--model gemini-pro]
+        [--script assemble.py]
 
 Two hard-won caveats (the prompt nudges around them, but YOU must too):
   * The score is FRAME-OF-REFERENCE dependent and noisy — the same file scored 9.5
@@ -24,13 +24,14 @@ from openrouter_image import query_image, _load_dotenv
 
 
 def main():
-    p = argparse.ArgumentParser(description="Vision-model art-director review")
+    p = argparse.ArgumentParser(
+        description="GPT-5.6 Luna Pro art-director review via OpenRouter"
+    )
     p.add_argument("--images", nargs="+", required=True,
                    help="image paths; reference them as 'image 1', 'image 2', ... in --question")
     p.add_argument("--question", required=True, help="what to assess (mention image numbers)")
     p.add_argument("--script", default=None,
                    help="optional assembler .py to embed for a technical compositing critique")
-    p.add_argument("--model", default="gemini-pro", choices=["gemini-pro", "gemini-flash"])
     p.add_argument("--lang", default="ru", help="response language (default ru)")
     args = p.parse_args()
 
@@ -52,7 +53,7 @@ def main():
         "приоритетный список правок. Отметь, что решается КОМПОЗИТОМ, а что требует лучших "
         f"АССЕТОВ/оверпейнта. Отвечай на языке: {args.lang}."
     )
-    print(query_image("\n\n".join(parts), args.images, model=args.model))
+    print(query_image("\n\n".join(parts), args.images, model="art-audit"))
 
 
 if __name__ == "__main__":

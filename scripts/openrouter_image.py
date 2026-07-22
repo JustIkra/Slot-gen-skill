@@ -30,6 +30,7 @@ OPENROUTER_MODELS = {
 }
 
 VISION_MODELS = {
+    "art-audit": "openai/gpt-5.6-luna-pro",
     "gemini-flash": "google/gemini-3.5-flash",
     "gemini-pro": "google/gemini-3.1-pro-preview",
 }
@@ -230,7 +231,7 @@ def query_image(
     model: str = "gemini-flash",
     response_format: Optional[dict] = None,
 ) -> str:
-    """Send *images* + *prompt* to a Gemini vision model via OpenRouter and
+    """Send *images* + *prompt* to a vision model via OpenRouter and
     return the raw text response. Use *response_format* to request JSON output.
     """
     if model not in VISION_MODELS:
