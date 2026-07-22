@@ -48,7 +48,7 @@ Synchronize `SKILL.md`, `README.md`, `docs/setup.md`, `docs/api-providers.md`, a
 Add an offline contract test that verifies:
 
 - active skill files contain no `3.8` runtime references;
-- the repository contains no `remove.bg` or `REMOVEBG_API_KEY` references;
+- active skill, runtime, and user documentation files contain no `remove.bg` or `REMOVEBG_API_KEY` references; historical design/plan records are excluded;
 - the legacy `characters_nick` reference files are absent;
 - the art-audit default resolves to `openai/gpt-5.6-luna-pro`;
 - `openrouter_image.py --help`, `split_character.py --help`, and `detect_parts.py --help` exit successfully;
