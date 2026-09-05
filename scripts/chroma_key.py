@@ -6,8 +6,8 @@ Why this exists
 UI assets such as frames, buttons, logos, and banners must preserve their
 generated source resolution. The reliable full-resolution path is:
 
-  1. Generate the asset on a SOLID CHROMA background (magenta #FF00FF works best
-     because nothing in gold/Egyptian art is magenta).
+  1. Generate the asset on a SOLID CHROMA background. Magenta #FF00FF works for
+     gold/blue art; green #00FF00 is safer for purple or magenta subjects.
   2. Key the chroma out here at full native resolution.
 
 This keeps every pixel the model produced, then you downscale to the target
@@ -25,8 +25,11 @@ Usage
 Notes
 -----
 - `--color` is the chroma to remove (hex, default magenta ff00ff).
-- The keyer is tuned to NOT eat lapis-blue studs / blue panels: magenta needs
-  BOTH red and blue high with green low, while blue gems have low red.
+- De-spill follows the selected chroma for magenta and green. Do not key purple
+  or magenta subjects from magenta; generate them on green and pass
+  `--color 00ff00`.
+- The magenta keyer is tuned to NOT eat lapis-blue studs / blue panels: magenta
+  needs BOTH red and blue high with green low, while blue gems have low red.
 - `--resize WxH` downscales the cleaned result (LANCZOS). Do not use it to
   upscale — generate larger instead.
 """
@@ -63,6 +66,7 @@ def chroma_key(img: Image.Image, color, erode: int, despill: bool) -> Image.Imag
     if erode > 0:
         k = erode * 2 + 1
         alpha = np.array(Image.fromarray(alpha, "L").filter(ImageFilter.MinFilter(k)))
+    alpha = np.minimum(alpha, a[:, :, 3].astype(np.uint8))
 
     out = np.array(img.convert("RGBA"))
     out[:, :, 3] = alpha
@@ -70,11 +74,15 @@ def chroma_key(img: Image.Image, color, erode: int, despill: bool) -> Image.Imag
     if despill:
         op = alpha > 0
         o = out.astype(int)
-        # pixels still tinted toward the chroma (here: magenta-style R&B > G)
-        spill = op & (o[:, :, 0] - o[:, :, 1] > 35) & (o[:, :, 2] - o[:, :, 1] > 20)
-        g = o[:, :, 1]
-        out[:, :, 0][spill] = np.clip(g[spill] + 12, 0, 255)
-        out[:, :, 2][spill] = np.clip(g[spill] + 8, 0, 255)
+        if (cr, cg, cb) == (255, 0, 255):
+            spill = op & (o[:, :, 0] - o[:, :, 1] > 35) & (o[:, :, 2] - o[:, :, 1] > 20)
+            g = o[:, :, 1]
+            out[:, :, 0][spill] = np.clip(g[spill] + 12, 0, 255)
+            out[:, :, 2][spill] = np.clip(g[spill] + 8, 0, 255)
+        elif (cr, cg, cb) == (0, 255, 0):
+            spill = op & (o[:, :, 1] - o[:, :, 0] > 35) & (o[:, :, 1] - o[:, :, 2] > 35)
+            neutral = np.maximum(o[:, :, 0], o[:, :, 2])
+            out[:, :, 1][spill] = np.clip(neutral[spill] + 8, 0, 255)
 
     return Image.fromarray(out, "RGBA")
 
@@ -88,6 +96,7 @@ def main():
     ap.add_argument("--no-despill", action="store_true")
     ap.add_argument("--no-trim", action="store_true", help="keep canvas (default trims to content bbox)")
     ap.add_argument("--resize", help="WxH to downscale cleaned result, e.g. 1364x994")
+    ap.add_argument("--allow-upscale", action="store_true", help="explicitly permit increasing output dimensions")
     args = ap.parse_args()
 
     img = Image.open(args.input).convert("RGBA")
@@ -101,9 +110,8 @@ def main():
 
     if args.resize:
         w, h = (int(v) for v in args.resize.lower().split("x"))
-        if w > res.width or h > res.height:
-            print(f"warning: --resize {w}x{h} UPSCALES past source {res.size}; "
-                  "generate larger instead of upscaling", file=sys.stderr)
+        if (w > res.width or h > res.height) and not args.allow_upscale:
+            ap.error(f"--resize {w}x{h} exceeds source {res.size}; requires explicit --allow-upscale")
         res = res.resize((w, h), Image.LANCZOS)
 
     res.save(args.output, "PNG", optimize=True)

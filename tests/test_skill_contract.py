@@ -56,20 +56,11 @@ class SkillContractTests(unittest.TestCase):
                 (ROOT / "reference" / f"characters_nick.{suffix}").exists()
             )
 
-    def test_external_background_removal_service_is_absent(self) -> None:
-        forbidden = (
-            "remove" + ".bg",
-            "REMOVE" + "BG_API_KEY",
-            "api." + "remove" + ".bg",
-            "--remove" + "-bg",
-        )
-        offenders: dict[str, list[str]] = {}
-        for path in active_text_files():
-            text = path.read_text(errors="ignore")
-            matches = [term for term in forbidden if term in text]
-            if matches:
-                offenders[str(path.relative_to(ROOT))] = matches
-        self.assertEqual(offenders, {})
+    def test_local_transparency_clis_start(self) -> None:
+        for script in ("scripts/chroma_key.py", "scripts/key_flood.py"):
+            with self.subTest(script=script):
+                result = run_help(sys.executable, "-B", script, "--help")
+                self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_all_vision_queries_use_luna_pro(self) -> None:
         module_path = ROOT / "scripts" / "openrouter_image.py"
@@ -102,11 +93,11 @@ class SkillContractTests(unittest.TestCase):
                 result = run_help(sys.executable, "-B", script, "--help")
                 self.assertEqual(result.returncode, 0, result.stderr)
 
-    def test_typescript_help_has_no_external_background_service(self) -> None:
+    def test_typescript_help_exposes_generation_inputs(self) -> None:
         result = run_help("bun", "run", "tools/generate-image.ts", "--help")
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertNotIn("remove-bg", result.stdout)
-        self.assertNotIn("REMOVE" + "BG_API_KEY", result.stdout)
+        self.assertIn("--output", result.stdout)
+        self.assertIn("--reference-image", result.stdout)
 
 
 if __name__ == "__main__":

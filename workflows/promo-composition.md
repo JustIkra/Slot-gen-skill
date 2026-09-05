@@ -192,8 +192,10 @@ layers (see below).
 
 ## Using a vision model as art director (and its trap)
 
-Send the rendered promo + the cut layers (+ optionally the assembler script text)
-to GPT-5.6 Luna Pro via `openrouter_image.query_image(prompt, images)` for a critique.
+Send the rendered promo + references (+ optionally the assembler script text)
+through `scripts/art_director_review.py --images ... --question ... --out <report.json>`.
+The report records the reference set and completion/coverage; an ad-hoc image answer is
+not a saved acceptance audit.
 Two hard-won caveats:
 
 - **The score is frame-of-reference dependent and noisy.** The SAME file scored
@@ -210,8 +212,8 @@ Two hard-won caveats:
 
 To regenerate a background that already carries the glow/shadows the foreground
 elements would cast, pass **two** reference images in one generation call: the
-current bg AND the final composited promo. `generate_image` only takes one ref, so
-POST the chat/completions payload yourself with two `image_url` parts before the
+current bg AND the final composited promo.
+Use the shared client's repeatable `--reference-image` flags (or `reference_images` in Python) to provide both images alongside the
 text (same shape as `query_image`). Prompt: "image 1 is the bg, image 2 shows where
 the ring/book/title sit — emit ONLY the environment with light radiating from where
 the book is, bake the halo/spill at those positions, no book/ring/title drawn."
@@ -231,8 +233,8 @@ ON TOP of the letters can't be removed this way — regenerate without them.
 
 Beyond the "no image data" miss, `nano-banana-pro` sometimes returns a real image
 that is a **washed-out foggy smear** (subject barely visible, ghosted, low
-contrast). Same fix: retry (it is stochastic — the identical prompt succeeds on the
-next call). Cheap detector before using the output:
+contrast). Treat a replacement as a new paid candidate within the agreed scope;
+do not automatically repeat ambiguous requests or switch models. A local detector before using the output:
 `black_frac = (rgb.min(2) < 25).mean()` and `mean = rgb.mean()` — a proper
 black-bg render has `black_frac ≳ 0.5`; a foggy fail is `mean ≳ 150`, `black_frac ≈ 0`.
 

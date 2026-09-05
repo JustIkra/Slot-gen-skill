@@ -33,6 +33,8 @@ def main():
     p.add_argument("--script", default=None,
                    help="optional assembler .py to embed for a technical compositing critique")
     p.add_argument("--lang", default="ru", help="response language (default ru)")
+    p.add_argument("--out", required=True, help="Task-local review report JSON")
+    p.add_argument("--max-tokens", type=int, default=None, help="Explicit provider limit; never reduced automatically")
     args = p.parse_args()
 
     _load_dotenv()
@@ -53,7 +55,9 @@ def main():
         "приоритетный список правок. Отметь, что решается КОМПОЗИТОМ, а что требует лучших "
         f"АССЕТОВ/оверпейнта. Отвечай на языке: {args.lang}."
     )
-    print(query_image("\n\n".join(parts), args.images))
+    parts.append('Return a JSON object with verdict (ACCEPT, REVISE, REJECT or INCOMPLETE), issues (array), coverage (nonempty string), and explanation. ACCEPT requires an empty issues array. State limitations; do not infer acceptance from a score alone.')
+    print(query_image("\n\n".join(parts), args.images, max_tokens=args.max_tokens,
+                      result_out=args.out, structured_review=True))
 
 
 if __name__ == "__main__":

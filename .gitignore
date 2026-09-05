@@ -21,3 +21,9 @@ node_modules/
 # Build / generated artifacts
 images.zip
 *.log
+.tmp*/
+.env*
+!.env.example
+*.egg-info/
+build/
+dist/

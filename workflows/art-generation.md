@@ -24,14 +24,13 @@ User asks for one of:
 3. Pick size:
    - `1K` — quick previews, cheapest.
    - `2K` — default for finals.
-   - `4K` — only when print or zoom is required.
+   - The configured route rejects `4K`; verify a suitable provider/model explicitly if a task requires it.
 4. For sprites, request native alpha with `--transparent` or generate on a
    controlled solid background and clean it locally with `chroma_key.py` or
    `key_flood.py`.
 
-> Note: OpenRouter advertises `0.5K` for `google/gemini-3.1-flash-image-preview`,
-> but Google AI Studio currently rejects it with `INVALID_ARGUMENT`. Until that
-> ships end-to-end, `1K` is the minimum.
+Use the installed shared client. Unsupported options fail before spending; never
+silently substitute a model or reduce the user's requested resolution/token limit.
 
 ## Examples
 
@@ -84,15 +83,19 @@ python3 scripts/key_flood.py \
 - Specify single label position (inside OR below, not both).
 - For consistent sets, reuse the exact same `--size` and `--aspect-ratio`.
 
-## Lessons from a full production reskin (read these)
+## Examples from a production reskin
 
-Hard-won during a complete Egyptian reskin of a live slot. They save hours.
+These examples are conditional on the brief, not a universal theme or mandatory recipe.
 
 ### Transparency / quality
 - For frames, buttons, banners, and logos, generate on a **solid magenta
   `#FF00FF`** background, then use `scripts/chroma_key.py --input raw.png
   --output clean.png --resize WxH`. This preserves native resolution and clean
   edges.
+- For a purple or magenta subject, generate on **solid green `#00FF00`** and
+  pass `--color 00ff00`. De-spill is chroma-aware: magenta keying neutralises
+  magenta spill, while green keying neutralises only green-dominant spill and
+  preserves purple foreground pixels.
 - For solid black or white backgrounds, use `scripts/key_flood.py` to remove
   the border-connected background while retaining the largest foreground part.
 - **Never upscale.** Generate at or above target size and downscale once.
@@ -116,6 +119,11 @@ Hard-won during a complete Egyptian reskin of a live slot. They save hours.
 ### Consistent sets (symbols, buttons, frames)
 - Generate an **anchor** first, then `--reference-image` it for the rest so the
   frame/material/lighting stays identical across the set.
+- If the source reference is a protected paytable or contact sheet, do not use
+  it directly for new symbols whose object classes or silhouettes overlap the
+  sheet. Build a style-only anchor without those target shapes, then use the
+  original sheet only in the final similarity audit. Prompt-level originality
+  instructions alone do not reliably prevent silhouette/facet copying.
 - To make paired UI (YES/NO) symmetric AND keep the bezel from darkening on
   hover: generate ONE bezel+gem, mask the gem by colour, and build the
   hover/press/disabled states by changing **only the gem** (leave the bezel
