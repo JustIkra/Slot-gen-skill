@@ -4,6 +4,8 @@ Source-art generation, video masters, raster processing and art-direction review
 The Python package owns the shared OpenRouter transport; the Bun CLI delegates to it.
 
 Read [SKILL.md](SKILL.md) for routing and [setup](docs/setup.md) for installation.
+Promo composition and delivery now live in `slot-promo`; deterministic three-copy
+spin textures live in `slot-reel-blur`. Those skills own their scripts and tests.
 Use --dry-run for an offline request check. Provider keys never belong in command
 arguments, logs or Git.
 

@@ -1,9 +1,10 @@
 ---
 name: slot-gen
 description: >
-  Use when generating or editing slot artwork, symbols, backgrounds, promo images or
-  video masters; preparing raster layers/transparency; or reviewing visual assets.
-  Spine rigging and runtime integration belong to slot-spine-skin.
+  Use when generating or editing slot source artwork, symbols, backgrounds or video
+  masters; preparing raster layers/transparency; or requesting AI visual-asset review.
+  Promo composition/delivery belongs to slot-promo, source-based reel blur to
+  slot-reel-blur, and Spine rigging/runtime integration to slot-spine-skin.
 ---
 
 # Slot art and source assets
@@ -37,7 +38,10 @@ Provider credentials are environment variables or ~/.codex/.env; never expose th
 | Color variants of coherent frames | scripts/recolor_lut.py | Consistent mapped palette |
 | Generate separated character parts | scripts/split_character.py | Source parts for the Spine owner |
 | Art-direction review | scripts/art_director_review.py --images ... --question ... --out <report.json> | Structured review with inputs/coverage |
-| Promo composition | [promo workflow](workflows/promo-composition.md) | Composition evaluated against the brief |
+
+For a promo package, use `slot-promo` as workflow owner and return generated source
+layers to it. For spin textures derived from existing symbols, use `slot-reel-blur`;
+that local process does not require this skill, provider credentials or generation.
 
 Use --help for command arguments; --dry-run prints an image request without spending.
 When the user requests Codex-native image generation/editing, use the imagegen skill/tool.
