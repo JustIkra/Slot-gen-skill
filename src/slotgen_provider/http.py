@@ -38,9 +38,26 @@ def validate_api_url(url, allowed_origins):
     return url
 
 
+def _trusted_fake_ip_ranges(host):
+    hosts = os.environ.get('SLOTGEN_FAKE_IP_HOSTS', '')
+    cidrs = os.environ.get('SLOTGEN_FAKE_IP_CIDRS', '')
+    if not hosts and not cidrs:
+        return []
+    if not hosts or not cidrs:
+        raise ValueError('Fake-IP requires explicit hosts and CIDRs')
+    networks = [ipaddress.ip_network(value.strip()) for value in cidrs.split(',')]
+    benchmark = ipaddress.ip_network('198.18.0.0/15')
+    if any(network.version != 4 or not network.subnet_of(benchmark) for network in networks):
+        raise ValueError('Trusted Fake-IP ranges must be within 198.18.0.0/15')
+    allowed_hosts = {value.strip().lower() for value in hosts.split(',')}
+    return networks if host.lower() in allowed_hosts else []
+
+
 def public_addresses(host, port):
+    fake_ranges = _trusted_fake_ip_ranges(host)
     addresses = list(dict.fromkeys(info[4][0] for info in socket.getaddrinfo(host, port, type=socket.SOCK_STREAM)))
-    if not addresses or any(not ipaddress.ip_address(address).is_global for address in addresses):
+    parsed = [ipaddress.ip_address(address) for address in addresses]
+    if not addresses or any(not address.is_global and not any(address in network for network in fake_ranges) for address in parsed):
         raise ValueError('Provider address is not public')
     return addresses
 
