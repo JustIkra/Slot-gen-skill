@@ -75,5 +75,3 @@ for a real-game screenshot use zephyr-launcher-session.
 Video jobs support submit/resume/download/auto. Resume the same job after interruption;
 submission_unknown requires reconciliation, not an automatic new paid task. Report provider
 errors without credentials. Validate provider API changes before updating the client.
-
-Third-party source terms remain in THIRD_PARTY_NOTICES.md and licenses/.
