@@ -17,26 +17,33 @@ It is an advisory visual review, not a Spine validator or production approval.
 - Keep idle separate from activation, win flashes and popups. Compare Hero and Collector
   as one material family while judging the miniature at native size.
 
-## Qwen3.8 request
+## BB Qwen3.8 review
 
-Use `qwen/qwen3.8-omni-flash` via OpenRouter chat completions and `OPENROUTER_KEY`.
-Use the shared `slotgen_provider.http.request_bytes` client with the exact OpenRouter
-origin. Put the fixed criteria in a text part first, then each labeled local MP4 as a
-`video_url` Base64 data URL and each lossless PNG as an `image_url` Base64 data URL.
-Request text output and stream usage. Set `max_completion_tokens` only when the user
-specifies a limit; do not silently lower it or change the model/reference set.
+Use the installed BB `qwen-review` provider with model
+`qwen/qwen3.8-omni-flash`. Put the fixed criteria, media labels, native
+display size, FPS, duration and source hashes in a task-local prompt file.
+Attach the complete local MP4 with `--file` and lossless PNGs with `--image`.
+Keep the final and first frames plus a local wrap metric in the evidence set.
+
+```bash
+bb thread spawn --project "$BB_PROJECT_ID" --environment "$BB_ENVIRONMENT_ID" \
+  --parent-self --visibility hidden --provider qwen-review \
+  --model qwen/qwen3.8-omni-flash --permission-mode accept-edits \
+  --title "Animation loop review" --prompt-file /absolute/path/review-prompt.md \
+  --file /absolute/path/cycle.mp4 --image /absolute/path/wrap-last.png \
+  --image /absolute/path/wrap-first.png
+```
 
 Ask for observed surface flow, independent plasma/rim motion, brightness/contrast,
 edge and glow, Hero–Collector consistency, native-size readability, and any visible
 seam. Require a time, severity, visual evidence and minimal adjustment for each issue.
-If the exact wrap or alpha source is not shown, the answer must say `not proven`, not
-infer a defect from a similar composition or a dark montage panel.
+If the exact wrap or alpha source is not shown, the answer must say `not proven`.
 
-Save the raw stream before parsing it. A valid report needs a nonempty answer, the
-terminal `[DONE]`, `finish_reason: stop`, and no provider error/refusal. Preserve the
-prompt, input hashes, returned model and usage in the task-local report. A 502,
-truncated stream or partial answer is not a verdict; do not resubmit unchanged work
-solely to obtain `APPROVED`.
+Wait for `bb thread wait <id> --status idle` and inspect
+`bb thread log <id> --all --json`. A successful BB turn with an inaccessible
+video claim or partial frame coverage is an incomplete review. Save the thread ID,
+prompt, source hashes, observed coverage and findings in the task-local report.
+Do not resubmit unchanged work solely to obtain an approval.
 
 Qwen3.8 missed a deliberately inserted two-second freeze in a controlled 256-px
 Collector video. Therefore use local adjacent-frame and wrap metrics plus human
@@ -44,6 +51,4 @@ playback to decide whether the loop is seamless; the model can suggest what to i
 not certify continuity. Keep accepted source masters unchanged until the user chooses
 an art direction.
 
-API references: [OpenRouter Qwen3.8](https://openrouter.ai/qwen/qwen3.8-omni-flash/),
-[video inputs](https://openrouter.ai/docs/guides/overview/multimodal/videos),
-[chat completions](https://openrouter.ai/docs/api/api-reference/chat/create-a-chat-completion).
+Provider reference: [Qwen3.8 Omni Flash](https://openrouter.ai/qwen/qwen3.8-omni-flash/).

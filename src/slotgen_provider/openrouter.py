@@ -215,17 +215,11 @@ def query_image(
     prompt: str,
     images: list[str],
     *,
-    response_format: Optional[dict] = None,
     max_tokens: Optional[int] = None,
-    result_out: Optional[str] = None,
-    structured_review: bool = False,
 ) -> str:
-    """Send *images* + *prompt* to a vision model via OpenRouter and
-    return the raw text response. Use *response_format* to request JSON output.
-    """
+    """Send images and a prompt to the configured vision model."""
     try:
         from slotgen_provider.http import request_json
-        from slotgen_provider.review import response_text, parse_review_response, input_fingerprints
     except ImportError as error:
         raise OpenRouterError("Install slotgen-provider in this Python environment: pip install -e .") from error
     api_key = _require_env("OPENROUTER_KEY")
@@ -242,23 +236,25 @@ def query_image(
         "model": VISION_MODELS["vision"],
         "messages": [{"role": "user", "content": content}],
     }
-    if response_format:
-        payload["response_format"] = response_format
-    if structured_review:
-        payload["response_format"] = {"type": "json_object"}
     if max_tokens is not None:
         if not isinstance(max_tokens, int) or max_tokens <= 0:
             raise OpenRouterError("max_tokens must be a positive integer")
         payload["max_tokens"] = max_tokens
 
     data = request_json("POST", OPENROUTER_ENDPOINT, token=api_key, allowed_origins={"https://openrouter.ai"}, body=payload, timeout=180)
-    text = response_text(data)
-    result = parse_review_response(data) if structured_review else text
-    if result_out:
-        report = {"inputs": input_fingerprints(images), "prompt": prompt, "requested_model": payload["model"], "max_tokens": max_tokens,
-                  "returned_model": data.get("model"), "usage": data.get("usage"), "finish_reason": data["choices"][0].get("finish_reason"), "result": result}
-        Path(result_out).write_text(json.dumps(report, ensure_ascii=False, indent=2))
-    return json.dumps(result, ensure_ascii=False) if structured_review else text
+    try:
+        choice = data["choices"][0]
+        message = choice["message"]
+        if choice.get("finish_reason") != "stop" or message.get("refusal"):
+            raise OpenRouterError("Vision response did not finish normally")
+        content = message.get("content")
+        if isinstance(content, list):
+            content = "".join(part.get("text", "") for part in content if part.get("type") == "text")
+        if not isinstance(content, str) or not content.strip():
+            raise OpenRouterError("Vision response is empty")
+        return content
+    except (KeyError, IndexError, TypeError) as error:
+        raise OpenRouterError("Malformed vision response") from error
 
 
 # Magenta-background generation pairs with scripts/chroma_key.py for UI parts;

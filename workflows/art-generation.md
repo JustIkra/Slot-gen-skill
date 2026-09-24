@@ -1,87 +1,21 @@
 # Art generation workflow
 
-Single-shot images via OpenRouter. Used for slot reels, icons, decorations, backgrounds.
+Image generation and editing will move to BB generation agents after the
+generation models are chosen. Do not launch the legacy direct-provider
+generation scripts from this skill. Existing source artwork can still be
+prepared locally with the transparency, recolor and validation routes in
+`SKILL.md`.
 
-## When to use
-
-User asks for one of:
-
-- "Generate a slot symbol / wild / scatter"
-- "Make a background for the reel area"
-- "Create a character portrait"
-- "Make this asset transparent"
-- "Give me 3 variations of X"
-
-## Steps
-
-1. Pick model:
-   - `nano-banana-2` — default, fast, supports reference images.
-   - `nano-banana-pro` — slower, better for hero assets and complex compositions.
-2. Pick aspect ratio matching the target slot:
-   - Square reel symbols → `1:1`
-   - Background sky/banner → `16:9` or `21:9`
-   - Vertical promo → `9:16`
-3. Pick size:
-   - `1K` — quick previews, cheapest.
-   - `2K` — default for finals.
-   - The configured route rejects `4K`; verify a suitable provider/model explicitly if a task requires it.
-4. For sprites, request native alpha with `--transparent` or generate on a
-   controlled solid background and clean it locally with `chroma_key.py` or
-   `key_flood.py`.
-
-Use the installed shared client. Unsupported options fail before spending; never
-silently substitute a model or reduce the user's requested resolution/token limit.
-
-## Examples
-
-Quick preview of a slot wild symbol:
-
-```bash
-bun run tools/generate-image.ts \
-  --prompt "Cartoon golden lion mascot, dynamic pose, neon outline, slot wild symbol" \
-  --size 1K --aspect-ratio 1:1 \
-  --output ./out/wild-preview.png
-```
-
-Final reel symbol generated on a controlled chroma background and keyed locally:
-
-```bash
-bun run tools/generate-image.ts \
-  --prompt "Cartoon golden lion mascot, dynamic pose, neon outline, slot wild symbol, solid magenta background" \
-  --size 2K --aspect-ratio 1:1 \
-  --output ./out/wild-raw.png
-
-python3 scripts/chroma_key.py \
-  --input ./out/wild-raw.png \
-  --output ./out/wild.png
-```
-
-Three variations of a background:
-
-```bash
-bun run tools/generate-image.ts \
-  --model nano-banana-pro \
-  --prompt "Ancient Egyptian temple at dusk, painterly, slot machine background" \
-  --size 2K --aspect-ratio 16:9 \
-  --creative-variations 3 \
-  --output ./out/bg.png
-```
-
-Stand-alone full-resolution keying call:
-
-```bash
-python3 scripts/key_flood.py \
-  ./uploads/user-symbol-on-black.png \
-  ./out/user-symbol.png \
-  --bg black
-```
+For the later BB route, retain the task brief: target dimensions, aspect
+ratio, palette, layer purpose, transparent or controlled-background output,
+reference images and budget. Preserve one accepted master for derivatives.
 
 ## Prompt tips (carried over from /art)
 
 - Avoid hex codes (`#1A8A9B` renders as text). Use color names.
 - State direction explicitly: "LEFT TO RIGHT" or "TOP TO BOTTOM".
 - Specify single label position (inside OR below, not both).
-- For consistent sets, reuse the exact same `--size` and `--aspect-ratio`.
+- For consistent sets, reuse the exact same size and aspect ratio.
 
 ## Examples from a production reskin
 
@@ -101,23 +35,22 @@ These examples are conditional on the brief, not a universal theme or mandatory 
 - **Never upscale.** Generate at or above target size and downscale once.
 
 ### Model / aspect ratio
-- **`nano-banana-pro` rejects extreme strip ratios** (`4:1`, `8:1`, `1:4`,
-  `1:8`) with HTTP 400. The tool now blocks this early — use `nano-banana-2`
-  (flash) for wide/tall strips. (Pro is worth it for hero art at normal ratios.)
+- Check the selected BB generation model's supported ratios before asking for
+  extreme strips such as `4:1` or `8:1`; preserve the requested aspect ratio.
 
 ### Text & logos
 - AI text breaks at wide aspect: at `8:1` it duplicates/misspells
   ("BOCK", "ABYDOS AYDOS"). Keep titles to **≤4:1**, one word per generation,
   and **eyeball the spelling** every time — regenerate on any defect.
 - For matching word/light style across a multi-word logo, generate one word as
-  the anchor, then pass it as `--reference-image` for the rest ("match this
+  the anchor, then use it as a reference for the rest ("match this
   material and LIGHTING exactly").
 - For guaranteed-correct short text where AI keeps failing, render with PIL +
   a bold font (e.g. macOS Copperplate) and a gold gradient — crisp and correct,
   if less flashy than AI 3D.
 
 ### Consistent sets (symbols, buttons, frames)
-- Generate an **anchor** first, then `--reference-image` it for the rest so the
+- Generate an **anchor** first, then use it as a reference for the rest so the
   frame/material/lighting stays identical across the set.
 - If the source reference is a protected paytable or contact sheet, do not use
   it directly for new symbols whose object classes or silhouettes overlap the

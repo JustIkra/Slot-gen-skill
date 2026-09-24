@@ -78,7 +78,6 @@ class SkillContractTests(unittest.TestCase):
         )
 
         for script in (
-            "scripts/art_director_review.py",
             "scripts/detect_parts.py",
         ):
             with self.subTest(script=script):

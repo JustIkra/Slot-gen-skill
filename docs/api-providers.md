@@ -1,42 +1,13 @@
-# Provider contract
+# Provider routing
 
-The shared implementation is src/slotgen_provider/openrouter.py. Python scripts and the
-Bun frontend call this one implementation. It uses OpenRouter's chat-completions endpoint.
+Art-direction and animation review use the installed BB `qwen-review` provider
+with `qwen/qwen3.8-omni-flash`. Read the
+[art-direction](../references/art-direction-review.md) or
+[animation-loop](../references/animation-loop-review.md) route for the evidence
+package and review criteria. The model's verdict is advisory; local checks and
+the user's visual acceptance remain separate.
 
-| Alias | Configured model | Role |
-|---|---|---|
-| nano-banana-2 | google/gemini-3.1-flash-image | Images |
-| nano-banana-pro | google/gemini-3-pro-image | Images |
-| vision | openai/gpt-5.6-luna-pro | Image analysis / art direction |
-
-These are configured routes, not a claim that every future provider supports every option.
-Current guards allow the configured 1K/2K path and reject unsupported strips for Pro and
-4K before credentials/spend. Do not silently reduce resolution or swap models. Verify
-official capabilities before changing aliases or guards.
-
-Image requests accept multiple --reference-image flags; Python accepts reference_images.
---dry-run returns the exact payload without a remote request. --reasoning and --provider
-are passed explicitly; the Bun --reasoning-trace flag maps to Python's
---reasoning-include-trace. --creative-variations requests the stated number of outputs.
-
-Art direction:
-
-    python scripts/art_director_review.py --images render.png reference.png --question "Assess the candidate against the reference" --out .tmp_review/audit.json
-
-The report includes input hashes, prompt, model, completion status, coverage and verdict.
---max-tokens is optional and passed unchanged. Truncated, refused or empty responses fail;
-a local validator checks the verdict structure even when a provider ignores JSON formatting.
-AI acceptance does not replace human visual acceptance.
-
-For motion, use the [animation-loop review](../references/animation-loop-review.md)
-instead of the image-only art-direction command. It uses
-`qwen/qwen3.8-omni-flash` with the shared HTTP client, not a configured
-`vision` alias. Labeled video and lossless PNG provide critique evidence;
-exact loop continuity still needs local frame checks.
-
-Image generation is synchronous: an ambiguous timeout must be reconciled before another
-paid request. Video uses persistent jobs in slotgen_provider.video/jobs. See the video workflow.
-No keys are stored in reports or job metadata. Authenticated requests use exact origins;
-CDN downloads use no Authorization, public-address validation and checked redirects.
-
-Reference: https://openrouter.ai/docs/guides/features/structured-outputs
+Image and video generation agents will be configured in a later stage. The
+legacy generation clients and job records remain in the repository for
+migration and reconciliation, but are not active skill routes. Do not start a
+new direct-provider generation request from this skill.
