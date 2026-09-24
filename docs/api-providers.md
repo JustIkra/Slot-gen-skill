@@ -28,6 +28,12 @@ The report includes input hashes, prompt, model, completion status, coverage and
 a local validator checks the verdict structure even when a provider ignores JSON formatting.
 AI acceptance does not replace human visual acceptance.
 
+For motion, use the [animation-loop review](../references/animation-loop-review.md)
+instead of the image-only art-direction command. It uses
+`qwen/qwen3.8-omni-flash` with the shared HTTP client, not a configured
+`vision` alias. Labeled video and lossless PNG provide critique evidence;
+exact loop continuity still needs local frame checks.
+
 Image generation is synchronous: an ambiguous timeout must be reconciled before another
 paid request. Video uses persistent jobs in slotgen_provider.video/jobs. See the video workflow.
 No keys are stored in reports or job metadata. Authenticated requests use exact origins;

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import re
 import subprocess
 import sys
 import unittest
@@ -45,10 +46,13 @@ def run_help(*args: str) -> subprocess.CompletedProcess[str]:
 
 class SkillContractTests(unittest.TestCase):
     def test_only_spine_42_is_active(self) -> None:
+        legacy_spine = re.compile(r"\bspine\s+(?:runtime\s+)?(?:v(?:ersion)?\s*)?3\.8\b", re.IGNORECASE)
+        self.assertIsNone(legacy_spine.search("Qwen3.8 animation review"))
+        self.assertIsNotNone(legacy_spine.search("Spine 3.8 runtime"))
         offenders = [
             str(path.relative_to(ROOT))
             for path in active_text_files()
-            if "3.8" in path.read_text(errors="ignore")
+            if legacy_spine.search(path.read_text(errors="ignore"))
         ]
         self.assertEqual(offenders, [])
         for suffix in ("json", "atlas", "png"):

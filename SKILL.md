@@ -38,6 +38,10 @@ Provider credentials are environment variables or ~/.codex/.env; never expose th
 | Color variants of coherent frames | scripts/recolor_lut.py | Consistent mapped palette |
 | Generate separated character parts | scripts/split_character.py | Source parts for the Spine owner |
 | Art-direction review | scripts/art_director_review.py --images ... --question ... --out <report.json> | Structured review with inputs/coverage |
+| Animation loop review | [animation loop review](references/animation-loop-review.md) | Qwen3.8 video/PNG critique with independent seam proof |
+
+For idle or miniature animation reviews, read the animation-loop reference before sending
+media. The image-only art-director command does not inspect temporal motion.
 
 For a promo package, use `slot-promo` as workflow owner and return generated source
 layers to it. For spin textures derived from existing symbols, use `slot-reel-blur`;
