@@ -1,14 +1,40 @@
 # Art generation workflow
 
-Image generation and editing will move to BB generation agents after the
-generation models are chosen. Do not launch the legacy direct-provider
-generation scripts from this skill. Existing source artwork can still be
-prepared locally with the transparency, recolor and validation routes in
-`SKILL.md`.
+Qwen-Image-2.1 generation and editing are available through fal. Other models
+will move to BB generation agents after they are chosen. Do not launch the
+legacy direct-provider generation scripts from this skill. Existing source
+artwork can still be prepared locally with the transparency, recolor and
+validation routes in `SKILL.md`.
 
-For the later BB route, retain the task brief: target dimensions, aspect
+For any generation route, retain the task brief: target dimensions, aspect
 ratio, palette, layer purpose, transparent or controlled-background output,
 reference images and budget. Preserve one accepted master for derivatives.
+
+## Qwen-Image-2.1 on fal
+
+Use this route when the user selects Qwen-Image-2.1 or wants to try its native
+transparent output. The fal model IDs are `fal-ai/qwen-image-2.1` for generation
+and `fal-ai/qwen-image-2.1/edit` for editing. Load `FAL_KEY` from
+`~/.codex/.env` in the same shell invocation; never print the key. Send JSON to
+`https://fal.run/<model-id>` with `Authorization: Key <FAL_KEY>` or use the fal
+client. For edits, pass ordered reference URLs in `image_urls` (up to 10).
+Preserve the requested aspect ratio and output dimensions using the model's
+supported `image_size` values or custom width and height.
+
+For a transparent subject, request `output_format: "png"` and state in the prompt:
+"This is an RGBA image with transparency. The image has an alpha channel and
+the background is transparent." `prompt_expander: "none"` keeps that instruction
+verbatim. Native transparency does not require a separate mask or chroma key.
+Inspect the saved PNG's alpha channel and composite it over light and dark
+backgrounds; check faint spill and edge halos before accepting it. If the
+alpha is missing or the edges are poor, revise the prompt or regenerate.
+
+Check the current rate through fal's
+[`/v1/models/pricing`](https://api.fal.ai/v1/models/pricing?endpoint_id=fal-ai%2Fqwen-image-2.1)
+before a batch; both endpoints were billed per compute second when checked on
+2026-09-25. See the [model card](https://huggingface.co/Qwen/Qwen-Image-2.1)
+and fal [generation](https://fal.ai/models/fal-ai/qwen-image-2.1/api) and
+[editing](https://fal.ai/models/fal-ai/qwen-image-2.1/edit/api) schemas.
 
 ## Prompt tips (carried over from /art)
 
@@ -22,7 +48,10 @@ reference images and budget. Preserve one accepted master for derivatives.
 These examples are conditional on the brief, not a universal theme or mandatory recipe.
 
 ### Transparency / quality
-- For frames, buttons, banners, and logos, generate on a **solid magenta
+- When Qwen-Image-2.1's native RGBA output fits the brief, try it first and
+  verify the alpha against both light and dark backgrounds.
+- For models without usable native alpha, generate frames, buttons, banners,
+  and logos on a **solid magenta
   `#FF00FF`** background, then use `scripts/chroma_key.py --input raw.png
   --output clean.png --resize WxH`. This preserves native resolution and clean
   edges.

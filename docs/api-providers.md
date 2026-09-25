@@ -7,7 +7,8 @@ with `qwen/qwen3.8-omni-flash`. Read the
 package and review criteria. The model's verdict is advisory; local checks and
 the user's visual acceptance remain separate.
 
-Image and video generation agents will be configured in a later stage. The
-legacy generation clients and job records remain in the repository for
-migration and reconciliation, but are not active skill routes. Do not start a
-new direct-provider generation request from this skill.
+Qwen-Image-2.1 generation and editing use the [fal route](../workflows/art-generation.md#qwen-image-21-on-fal),
+including native transparent PNG output. Other image and video generation
+agents will be configured in a later stage. Legacy generation clients and job
+records remain for migration and reconciliation; do not launch them for new
+requests.

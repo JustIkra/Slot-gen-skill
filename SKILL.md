@@ -30,7 +30,8 @@ The BB review provider reads its credential on the host; never expose its value.
 
 | Request | Entry point | Result |
 |---|---|---|
-| Image, edit, variants | BB generation agent to be configured later | Bitmap master |
+| Image, edit, variants with Qwen-Image-2.1 | [art generation](workflows/art-generation.md#qwen-image-21-on-fal) via fal | Bitmap master; native RGBA when requested |
+| Image, edit, variants with another model | BB generation agent to be configured later | Bitmap master |
 | Image-to-video | BB generation agent to be configured later | Video master |
 | Opaque chroma subject | scripts/chroma_key.py | RGBA retaining original alpha |
 | Soft light on black | scripts/key_light.py | Straight-alpha additive layer; canvas/particles retained |
@@ -42,17 +43,21 @@ The BB review provider reads its credential on the host; never expose its value.
 
 For art-direction review, read [art-direction review](references/art-direction-review.md).
 For idle or miniature animation reviews, read the animation-loop reference before
-sending media; still images do not prove temporal motion.
+sending media; still images do not prove temporal motion. Before either BB review,
+follow the `qwen-media-review` skill: read the project's accepted asset brief and
+runtime role, then include those facts and constraints in the media prompt.
 
 For a promo package, use `slot-promo` as workflow owner and return generated source
 layers to it. For spin textures derived from existing symbols, use `slot-reel-blur`;
 that local process does not require this skill, provider credentials or generation.
 
-Generation models will be configured as BB agents in a later stage. The old direct-provider
-generation clients remain in the repository for migration and existing job reconciliation,
-but this skill does not launch new requests through them. When the user explicitly requests
-Codex-native image generation/editing, use the imagegen skill/tool. Do not silently change
-a requested model, resolution, reference set or token limit.
+Qwen-Image-2.1 is available through the fal route above for generation and editing. It can
+generate a PNG with native transparency from a prompt, without a separate extraction mask;
+check the actual alpha and edges before accepting the asset.
+The old direct-provider generation clients remain for migration and job reconciliation,
+not for new requests. Other generation models await BB agents. When the user explicitly
+requests Codex-native image generation/editing, use the imagegen skill/tool. Do not silently
+change a requested model, resolution, reference set or token limit.
 
 ## Visual decisions
 
@@ -70,6 +75,22 @@ a requested model, resolution, reference set or token limit.
 - AI scores are advisory. Fix a reference set and criteria; an incomplete response is not
   ACCEPT. Preserve the user's max-token limit. Do not repeatedly submit unchanged work
   solely to obtain a passing verdict.
+
+## Animation sources and runtime handoff
+
+For slot animation, sequences are useful for proving the visual idea. The user's preference
+after a successful prototype is to move suitable motion into reusable meshes and bones.
+Prepare separable surface, rim, glow, filaments and attached-flash material where their
+motion differs. Keep the accepted master and prototype as the visual reference. A hybrid
+is appropriate when mesh deformation cannot reproduce changing surface detail; do not
+force every layer into a rig or distort the whole image to simulate internal flow.
+
+Hand the accepted layers and registration data to `slot-spine-skin` for rigging and packing.
+Runtime textures belong in the game's existing shared TexturePacker atlases, even when
+source units are stored separately. A new source material is not a reason for a new atlas.
+Use the existing Urso scripts and keep the user's quality settings, including `-w 75`.
+Do not silently reduce resolution or frame count: compare the optimized result with its
+reference at matching scale, timing and background and report the memory tradeoff.
 
 ## Completion and failures
 

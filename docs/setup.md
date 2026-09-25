@@ -15,10 +15,11 @@ Offline smoke test (no key or spend):
 
     PYTHON="$PWD/.venv/bin/python" .venv/bin/python -m unittest discover -s tests
 
-New generation jobs await a BB generation agent and model choice. Keep existing
-outputs and job records in the target game's ignored .tmp_<task>/, not in the
-skill source tree or system /tmp. Native Codex image requests use the imagegen
-tool when explicitly requested.
+Qwen-Image-2.1 image jobs use the [fal route](../workflows/art-generation.md#qwen-image-21-on-fal).
+Other generation jobs await a BB agent and model choice. Keep outputs and job
+records in the target game's ignored .tmp_<task>/, not in the skill source tree
+or system /tmp. Native Codex image requests use the imagegen tool when explicitly
+requested.
 
 The shared MorningCat installation uses .local/skills-venv; it is convenience configuration,
 not a prerequisite on another machine. Exact tested dependency versions are recorded in
